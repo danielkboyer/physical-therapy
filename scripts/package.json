@@ -1,0 +1,12 @@
+{
+  "name": "pt-app-scripts",
+  "version": "1.0.0",
+  "description": "Utility scripts for PT App",
+  "scripts": {
+    "clear": "node clear-pt-data.js"
+  },
+  "dependencies": {
+    "neo4j-driver": "^5.15.0",
+    "dotenv": "^16.3.1"
+  }
+}
