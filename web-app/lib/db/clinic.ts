@@ -26,7 +26,7 @@ export async function createClinic(name: string): Promise<Clinic> {
       CREATE (c:Clinic {
         id: randomUUID(),
         name: $name,
-        createdAt: datetime().epochMillis
+        createdAt: timestamp()
       })
       RETURN c
       `,
@@ -37,7 +37,7 @@ export async function createClinic(name: string): Promise<Clinic> {
     return {
       id: clinic.id,
       name: clinic.name,
-      createdAt: clinic.createdAt.toNumber(),
+      createdAt: clinic.createdAt.toInt(),
     };
   } finally {
     await session.close();
@@ -64,7 +64,7 @@ export async function getClinicById(id: string): Promise<Clinic | null> {
     return {
       id: clinic.id,
       name: clinic.name,
-      createdAt: clinic.createdAt.toNumber(),
+      createdAt: clinic.createdAt.toInt(),
     };
   } finally {
     await session.close();

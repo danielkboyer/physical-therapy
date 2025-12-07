@@ -3,7 +3,7 @@
  *
  * This script clears all data for the Physical Therapy app from the shared Neo4j database.
  * It only deletes nodes and relationships specific to this app:
- * - Clinic, Location, User (with role property), Customer, Session nodes
+ * - Clinic and User nodes
  *
  * Usage: node scripts/clear-pt-data.js
  */
@@ -27,23 +27,14 @@ async function clearPTData() {
     const counts = await session.run(`
       OPTIONAL MATCH (c:Clinic)
       WITH count(c) as clinics
-      OPTIONAL MATCH (l:Location)
-      WITH clinics, count(l) as locations
-      OPTIONAL MATCH (u:User) WHERE u.role IN ['admin', 'therapist']
-      WITH clinics, locations, count(u) as users
-      OPTIONAL MATCH (cust:Customer)
-      WITH clinics, locations, users, count(cust) as customers
-      OPTIONAL MATCH (s:Session)
-      RETURN clinics, locations, users, customers, count(s) as sessions
+      OPTIONAL MATCH (u:User)
+      RETURN clinics, count(u) as users
     `);
 
     const record = counts.records[0];
     console.log('📊 Current PT app data:');
-    console.log(`   Clinics:   ${record.get('clinics')}`);
-    console.log(`   Locations: ${record.get('locations')}`);
-    console.log(`   Users:     ${record.get('users')}`);
-    console.log(`   Customers: ${record.get('customers')}`);
-    console.log(`   Sessions:  ${record.get('sessions')}`);
+    console.log(`   Clinics: ${record.get('clinics')}`);
+    console.log(`   Users:   ${record.get('users')}`);
     console.log('');
 
     // Ask for confirmation
@@ -65,29 +56,10 @@ async function clearPTData() {
     console.log('\n🗑️  Deleting PT app data...\n');
 
     // Delete in order to respect relationships
-    console.log('   Deleting Sessions...');
-    await session.run(`
-      MATCH (s:Session)
-      DETACH DELETE s
-    `);
-
-    console.log('   Deleting Customers...');
-    await session.run(`
-      MATCH (c:Customer)
-      DETACH DELETE c
-    `);
-
     console.log('   Deleting Users...');
     await session.run(`
       MATCH (u:User)
-      WHERE u.role IN ['admin', 'therapist']
       DETACH DELETE u
-    `);
-
-    console.log('   Deleting Locations...');
-    await session.run(`
-      MATCH (l:Location)
-      DETACH DELETE l
     `);
 
     console.log('   Deleting Clinics...');
@@ -102,23 +74,14 @@ async function clearPTData() {
     const afterCounts = await session.run(`
       OPTIONAL MATCH (c:Clinic)
       WITH count(c) as clinics
-      OPTIONAL MATCH (l:Location)
-      WITH clinics, count(l) as locations
-      OPTIONAL MATCH (u:User) WHERE u.role IN ['admin', 'therapist']
-      WITH clinics, locations, count(u) as users
-      OPTIONAL MATCH (cust:Customer)
-      WITH clinics, locations, users, count(cust) as customers
-      OPTIONAL MATCH (s:Session)
-      RETURN clinics, locations, users, customers, count(s) as sessions
+      OPTIONAL MATCH (u:User)
+      RETURN clinics, count(u) as users
     `);
 
     const afterRecord = afterCounts.records[0];
     console.log('📊 Remaining PT app data:');
-    console.log(`   Clinics:   ${afterRecord.get('clinics')}`);
-    console.log(`   Locations: ${afterRecord.get('locations')}`);
-    console.log(`   Users:     ${afterRecord.get('users')}`);
-    console.log(`   Customers: ${afterRecord.get('customers')}`);
-    console.log(`   Sessions:  ${afterRecord.get('sessions')}`);
+    console.log(`   Clinics: ${afterRecord.get('clinics')}`);
+    console.log(`   Users:   ${afterRecord.get('users')}`);
 
   } catch (error) {
     console.error('❌ Error clearing data:', error);

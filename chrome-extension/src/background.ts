@@ -15,7 +15,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true; // Keep message channel open for async response
 });
 
-// Handle extension icon click
+// Automatically open side panel when extension icon is clicked
 chrome.action.onClicked.addListener((tab) => {
-  chrome.action.openPopup();
+  if (tab.id) {
+    chrome.sidePanel.open({ tabId: tab.id });
+  }
 });

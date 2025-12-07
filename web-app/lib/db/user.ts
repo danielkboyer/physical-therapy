@@ -48,7 +48,7 @@ export async function createUser(data: {
         name: $name,
         password: $password,
         clinicId: $clinicId,
-        createdAt: datetime().epochMillis
+        createdAt: timestamp()
       })
       CREATE (c)-[:HAS_USER]->(u)
       RETURN u
@@ -67,7 +67,7 @@ export async function createUser(data: {
       email: user.email,
       name: user.name,
       clinicId: user.clinicId,
-      createdAt: user.createdAt.toNumber(),
+      createdAt: user.createdAt.toInt(),
     };
   } finally {
     await session.close();
@@ -97,7 +97,7 @@ export async function getUserByEmail(email: string): Promise<UserWithPassword | 
       name: user.name,
       password: user.password,
       clinicId: user.clinicId,
-      createdAt: user.createdAt.toNumber(),
+      createdAt: user.createdAt.toInt(),
     };
   } finally {
     await session.close();
@@ -126,7 +126,7 @@ export async function getUserById(id: string): Promise<User | null> {
       email: user.email,
       name: user.name,
       clinicId: user.clinicId,
-      createdAt: user.createdAt.toNumber(),
+      createdAt: user.createdAt.toInt(),
     };
   } finally {
     await session.close();
@@ -157,7 +157,7 @@ export async function getUsersByClinicId(clinicId: string): Promise<User[]> {
         email: user.email,
         name: user.name,
         clinicId: user.clinicId,
-        createdAt: user.createdAt.toNumber(),
+        createdAt: user.createdAt.toInt(),
       };
     });
   } finally {
