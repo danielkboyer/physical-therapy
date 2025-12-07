@@ -3,6 +3,7 @@ import Signup from './pages/Signup';
 import Login from './pages/Login';
 import Dashboard, { type DashboardState } from './components/Dashboard';
 import ProfilePage from './pages/ProfilePage';
+import { trpc } from './trpc-client';
 
 type View = 'signup' | 'login' | 'dashboard' | 'profile';
 
@@ -19,6 +20,12 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [savedDashboardState, setSavedDashboardState] = useState<DashboardState | undefined>(undefined);
 
+  // Check for integrations when user logs in
+  const { data: integrations } = trpc.emrIntegration.getByClinic.useQuery(
+    { clinicId: user?.clinicId || '' },
+    { enabled: !!user?.clinicId }
+  );
+
   useEffect(() => {
     // Check if user is logged in
     chrome.storage.local.get(['user', 'isLoggedIn'], (result) => {
@@ -30,6 +37,20 @@ function App() {
       }
     });
   }, []);
+
+  // Set default tab based on whether integrations exist
+  useEffect(() => {
+    if (user && currentView === 'dashboard' && !savedDashboardState && integrations !== undefined) {
+      const hasActiveIntegration = integrations.some(int => int.isActive);
+      if (!hasActiveIntegration) {
+        setSavedDashboardState({
+          currentView: { type: 'integrations' },
+          currentTab: 'integrations',
+          searchQuery: '',
+        });
+      }
+    }
+  }, [user, currentView, integrations, savedDashboardState]);
 
   const handleLoginSuccess = (userData: StoredUser) => {
     setUser(userData);

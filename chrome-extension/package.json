@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@pt-app/react-utils": "file:../react-utils",
+    "@pt-app/shared-models": "file:../shared-models",
     "@pt-app/shared-ui": "file:../shared-ui",
     "@tanstack/react-query": "^5.90.12",
     "@trpc/client": "^11.0.0-rc.673",

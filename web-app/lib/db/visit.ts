@@ -5,6 +5,7 @@ export interface Visit {
   patientId: string;
   clinicId: string;
   visitDate: Date;
+  externalId?: string; // ID from the EMR system
   createdAt: Date;
   updatedAt: Date;
 }
@@ -12,7 +13,8 @@ export interface Visit {
 export async function createVisit(
   patientId: string,
   clinicId: string,
-  visitDate: Date
+  visitDate: Date,
+  externalId?: string
 ): Promise<Visit> {
   const session = getSession();
 
@@ -24,12 +26,13 @@ export async function createVisit(
         patientId: $patientId,
         clinicId: $clinicId,
         visitDate: datetime($visitDate),
+        externalId: $externalId,
         createdAt: datetime(),
         updatedAt: datetime()
       })
       RETURN v
       `,
-      { patientId, clinicId, visitDate: visitDate.toISOString() }
+      { patientId, clinicId, visitDate: visitDate.toISOString(), externalId }
     );
 
     const node = result.records[0].get('v');
@@ -38,6 +41,7 @@ export async function createVisit(
       patientId: node.properties.patientId,
       clinicId: node.properties.clinicId,
       visitDate: new Date(node.properties.visitDate),
+      externalId: node.properties.externalId,
       createdAt: new Date(node.properties.createdAt),
       updatedAt: new Date(node.properties.updatedAt),
     };
@@ -66,6 +70,7 @@ export async function getVisitsByClinic(clinicId: string): Promise<Visit[]> {
         patientId: node.properties.patientId,
         clinicId: node.properties.clinicId,
         visitDate: new Date(node.properties.visitDate),
+        externalId: node.properties.externalId,
         createdAt: new Date(node.properties.createdAt),
         updatedAt: new Date(node.properties.updatedAt),
       };
@@ -95,6 +100,7 @@ export async function getVisitsByPatient(patientId: string): Promise<Visit[]> {
         patientId: node.properties.patientId,
         clinicId: node.properties.clinicId,
         visitDate: new Date(node.properties.visitDate),
+        externalId: node.properties.externalId,
         createdAt: new Date(node.properties.createdAt),
         updatedAt: new Date(node.properties.updatedAt),
       };
@@ -126,6 +132,41 @@ export async function getVisitById(id: string): Promise<Visit | null> {
       patientId: node.properties.patientId,
       clinicId: node.properties.clinicId,
       visitDate: new Date(node.properties.visitDate),
+      externalId: node.properties.externalId,
+      createdAt: new Date(node.properties.createdAt),
+      updatedAt: new Date(node.properties.updatedAt),
+    };
+  } finally {
+    await session.close();
+  }
+}
+
+export async function getVisitByExternalId(
+  clinicId: string,
+  externalId: string
+): Promise<Visit | null> {
+  const session = getSession();
+
+  try {
+    const result = await session.run(
+      `
+      MATCH (v:Visit {clinicId: $clinicId, externalId: $externalId})
+      RETURN v
+      `,
+      { clinicId, externalId }
+    );
+
+    if (result.records.length === 0) {
+      return null;
+    }
+
+    const node = result.records[0].get('v');
+    return {
+      id: node.properties.id,
+      patientId: node.properties.patientId,
+      clinicId: node.properties.clinicId,
+      visitDate: new Date(node.properties.visitDate),
+      externalId: node.properties.externalId,
       createdAt: new Date(node.properties.createdAt),
       updatedAt: new Date(node.properties.updatedAt),
     };

@@ -12,6 +12,8 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: '@pt-app/shared-ui', replacement: path.resolve(__dirname, '../shared-ui/src') },
+      { find: '@pt-app/shared-models', replacement: path.resolve(__dirname, '../shared-models') },
+      { find: '@pt-app/react-utils', replacement: path.resolve(__dirname, '../react-utils') },
       { find: '@', replacement: path.resolve(__dirname, '../shared-ui/src') },
       { find: /^~/, replacement: path.resolve(__dirname, './src') },
     ],

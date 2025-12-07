@@ -12,20 +12,10 @@ interface LoginProps {
 export default function Login({ onSuccess, onSwitchToSignup }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const result = await trpc.auth.login.mutate({
-        email,
-        password,
-      });
-
+  const loginMutation = trpc.auth.login.useMutation({
+    onSuccess: async (result) => {
       // Store user data and login state
       await chrome.storage.local.set({
         user: result.user,
@@ -33,7 +23,8 @@ export default function Login({ onSuccess, onSwitchToSignup }: LoginProps) {
       });
 
       onSuccess(result.user);
-    } catch (err: any) {
+    },
+    onError: (err: any) => {
       console.error('Login error:', err);
 
       let errorMessage = 'Failed to login. Please try again.';
@@ -45,8 +36,17 @@ export default function Login({ onSuccess, onSwitchToSignup }: LoginProps) {
       }
 
       setError(errorMessage);
-      setLoading(false);
-    }
+    },
+  });
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    loginMutation.mutate({
+      email,
+      password,
+    });
   };
 
   return (
@@ -92,8 +92,8 @@ export default function Login({ onSuccess, onSwitchToSignup }: LoginProps) {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Signing In...' : 'Sign In'}
+          <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
+            {loginMutation.isPending ? 'Signing In...' : 'Sign In'}
           </Button>
         </form>
 

@@ -13,7 +13,6 @@ interface PatientProfilePageProps {
 
 export default function PatientProfilePage({
   patientId,
-  clinicId,
   onBack,
   onVisitClick,
 }: PatientProfilePageProps) {

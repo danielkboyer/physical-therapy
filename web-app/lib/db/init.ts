@@ -73,6 +73,39 @@ export async function initializeDatabase(): Promise<void> {
       FOR (r:Recording) ON (r.visitId)
     `);
 
+    // EMR Integration constraints and indexes
+    await session.run(`
+      CREATE CONSTRAINT emr_integration_id IF NOT EXISTS
+      FOR (e:EmrIntegration) REQUIRE e.id IS UNIQUE
+    `);
+
+    await session.run(`
+      CREATE INDEX emr_integration_clinic IF NOT EXISTS
+      FOR (e:EmrIntegration) ON (e.clinicId)
+    `);
+
+    // Indexes for externalId lookups (for EMR integration)
+    await session.run(`
+      CREATE INDEX patient_external_id IF NOT EXISTS
+      FOR (p:Patient) ON (p.externalId)
+    `);
+
+    await session.run(`
+      CREATE INDEX visit_external_id IF NOT EXISTS
+      FOR (v:Visit) ON (v.externalId)
+    `);
+
+    // Composite index for faster clinic + externalId lookups
+    await session.run(`
+      CREATE INDEX patient_clinic_external IF NOT EXISTS
+      FOR (p:Patient) ON (p.clinicId, p.externalId)
+    `);
+
+    await session.run(`
+      CREATE INDEX visit_clinic_external IF NOT EXISTS
+      FOR (v:Visit) ON (v.clinicId, v.externalId)
+    `);
+
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);

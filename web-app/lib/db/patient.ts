@@ -6,6 +6,7 @@ export interface Patient {
   lastName: string;
   nickName?: string;
   clinicId: string;
+  externalId?: string; // ID from the EMR system
   createdAt: Date;
   updatedAt: Date;
 }
@@ -14,7 +15,8 @@ export async function createPatient(
   firstName: string,
   lastName: string,
   nickName: string | undefined,
-  clinicId: string
+  clinicId: string,
+  externalId?: string
 ): Promise<Patient> {
   const session = getSession();
 
@@ -27,12 +29,13 @@ export async function createPatient(
         lastName: $lastName,
         nickName: $nickName,
         clinicId: $clinicId,
+        externalId: $externalId,
         createdAt: datetime(),
         updatedAt: datetime()
       })
       RETURN p
       `,
-      { firstName, lastName, nickName, clinicId }
+      { firstName, lastName, nickName, clinicId, externalId }
     );
 
     const node = result.records[0].get('p');
@@ -42,6 +45,7 @@ export async function createPatient(
       lastName: node.properties.lastName,
       nickName: node.properties.nickName,
       clinicId: node.properties.clinicId,
+      externalId: node.properties.externalId,
       createdAt: new Date(node.properties.createdAt),
       updatedAt: new Date(node.properties.updatedAt),
     };
@@ -71,6 +75,7 @@ export async function getPatientsByClinic(clinicId: string): Promise<Patient[]> 
         lastName: node.properties.lastName,
         nickName: node.properties.nickName,
         clinicId: node.properties.clinicId,
+        externalId: node.properties.externalId,
         createdAt: new Date(node.properties.createdAt),
         updatedAt: new Date(node.properties.updatedAt),
       };
@@ -103,6 +108,42 @@ export async function getPatientById(id: string): Promise<Patient | null> {
       lastName: node.properties.lastName,
       nickName: node.properties.nickName,
       clinicId: node.properties.clinicId,
+      externalId: node.properties.externalId,
+      createdAt: new Date(node.properties.createdAt),
+      updatedAt: new Date(node.properties.updatedAt),
+    };
+  } finally {
+    await session.close();
+  }
+}
+
+export async function getPatientByExternalId(
+  clinicId: string,
+  externalId: string
+): Promise<Patient | null> {
+  const session = getSession();
+
+  try {
+    const result = await session.run(
+      `
+      MATCH (p:Patient {clinicId: $clinicId, externalId: $externalId})
+      RETURN p
+      `,
+      { clinicId, externalId }
+    );
+
+    if (result.records.length === 0) {
+      return null;
+    }
+
+    const node = result.records[0].get('p');
+    return {
+      id: node.properties.id,
+      firstName: node.properties.firstName,
+      lastName: node.properties.lastName,
+      nickName: node.properties.nickName,
+      clinicId: node.properties.clinicId,
+      externalId: node.properties.externalId,
       createdAt: new Date(node.properties.createdAt),
       updatedAt: new Date(node.properties.updatedAt),
     };
@@ -136,6 +177,7 @@ export async function updatePatient(
       lastName: node.properties.lastName,
       nickName: node.properties.nickName,
       clinicId: node.properties.clinicId,
+      externalId: node.properties.externalId,
       createdAt: new Date(node.properties.createdAt),
       updatedAt: new Date(node.properties.updatedAt),
     };

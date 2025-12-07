@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  transpilePackages: ['@pt-app/shared-models', '@pt-app/shared-ui'],
 };
 
 export default nextConfig;

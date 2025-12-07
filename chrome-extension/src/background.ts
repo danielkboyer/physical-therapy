@@ -6,7 +6,7 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // Handle messages from popup or content scripts
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   console.log('Received message:', message);
 
   // Add your message handling logic here

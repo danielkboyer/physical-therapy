@@ -75,13 +75,13 @@ npm install
 npm run build
 
 # Watch mode (auto-rebuild on file changes)
-npm run watch
+npm run build:watch
 ```
 
 ### Development Workflow
 
 1. Make changes to TypeScript files in `src/`
-2. Run `npm run build` or `npm run watch`
+2. Run `npm run build` or `npm run build:watch`
 3. Go to `chrome://extensions/` and click the refresh icon
 4. Test your changes
 

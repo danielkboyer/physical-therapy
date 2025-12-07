@@ -1,9 +1,9 @@
-import { Users, Calendar, ChevronLeft } from 'lucide-react';
+import { Users, Calendar, Plug, ChevronLeft } from 'lucide-react';
 import { Button, cn } from '@pt-app/shared-ui';
 
 interface AppSidebarProps {
-  currentTab: 'patients' | 'visits';
-  onTabChange: (tab: 'patients' | 'visits') => void;
+  currentTab: 'patients' | 'visits' | 'integrations';
+  onTabChange: (tab: 'patients' | 'visits' | 'integrations') => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -19,10 +19,15 @@ const items = [
     title: 'Visits',
     icon: Calendar,
   },
+  {
+    id: 'integrations' as const,
+    title: 'Integrations',
+    icon: Plug,
+  },
 ];
 
 export default function AppSidebar({ currentTab, onTabChange, isOpen, onClose }: AppSidebarProps) {
-  const handleTabChange = (tab: 'patients' | 'visits') => {
+  const handleTabChange = (tab: 'patients' | 'visits' | 'integrations') => {
     onTabChange(tab);
     onClose();
   };

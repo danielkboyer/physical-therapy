@@ -7,17 +7,19 @@ import VisitsPage from '../pages/VisitsPage';
 import PatientProfilePage from '../pages/PatientProfilePage';
 import VisitScreen from '../pages/VisitScreen';
 import RecordingScreen from '../pages/RecordingScreen';
+import IntegrationsPage from '../pages/IntegrationsPage';
 
 export type DashboardView =
   | { type: 'patients' }
   | { type: 'visits' }
+  | { type: 'integrations' }
   | { type: 'patient-profile'; patientId: string }
   | { type: 'visit'; visitId: string }
   | { type: 'recording'; visitId: string; recordingId?: string };
 
 export interface DashboardState {
   currentView: DashboardView;
-  currentTab: 'patients' | 'visits';
+  currentTab: 'patients' | 'visits' | 'integrations';
   searchQuery: string;
 }
 
@@ -35,11 +37,11 @@ interface DashboardProps {
   initialState?: DashboardState;
 }
 
-export default function Dashboard({ user, onLogout, onProfileClick, sidebarOpen, setSidebarOpen, initialState }: DashboardProps) {
+export default function Dashboard({ user, onProfileClick, sidebarOpen, setSidebarOpen, initialState }: DashboardProps) {
   const [currentView, setCurrentView] = useState<DashboardView>(
     initialState?.currentView || { type: 'patients' }
   );
-  const [currentTab, setCurrentTab] = useState<'patients' | 'visits'>(
+  const [currentTab, setCurrentTab] = useState<'patients' | 'visits' | 'integrations'>(
     initialState?.currentTab || 'patients'
   );
   const [searchQuery, setSearchQuery] = useState(initialState?.searchQuery || '');
@@ -51,7 +53,7 @@ export default function Dashboard({ user, onLogout, onProfileClick, sidebarOpen,
     .toUpperCase()
     .slice(0, 2);
 
-  const handleTabChange = (tab: 'patients' | 'visits') => {
+  const handleTabChange = (tab: 'patients' | 'visits' | 'integrations') => {
     setCurrentTab(tab);
     setCurrentView({ type: tab });
   };
@@ -96,6 +98,8 @@ export default function Dashboard({ user, onLogout, onProfileClick, sidebarOpen,
             onVisitClick={handleVisitClick}
           />
         );
+      case 'integrations':
+        return <IntegrationsPage clinicId={user.clinicId} />;
       case 'patient-profile':
         return (
           <PatientProfilePage
@@ -124,7 +128,7 @@ export default function Dashboard({ user, onLogout, onProfileClick, sidebarOpen,
     }
   };
 
-  const showHeaderAndSidebar = currentView.type === 'patients' || currentView.type === 'visits';
+  const showHeaderAndSidebar = currentView.type === 'patients' || currentView.type === 'visits' || currentView.type === 'integrations';
 
   return (
     <div className="flex h-screen w-full overflow-hidden">

@@ -23,10 +23,15 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["../shared-ui/src/*", "../web-app/*"],
+      "@pt-app/shared-ui": ["../shared-ui/src/index.ts"],
+      "@pt-app/shared-models": ["../shared-models/index.ts"],
+      "@pt-app/react-utils": ["../react-utils/index.ts"],
+      "~/*": ["./src/*"]
     },
     "types": ["chrome", "node"]
   },
   "include": ["src"],
+  "exclude": ["node_modules"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

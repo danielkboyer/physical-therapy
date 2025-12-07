@@ -14,24 +14,11 @@ export default function Signup({ onSuccess, onSwitchToLogin }: SignupProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    setLoading(true);
-
-    try {
-      const result = await trpc.auth.signup.mutate({
-        clinicName,
-        name,
-        email,
-        password,
-      });
-
+  const signupMutation = trpc.auth.signup.useMutation({
+    onSuccess: async (result) => {
       setSuccess('Account created successfully! Redirecting...');
 
       // Store user data
@@ -43,7 +30,8 @@ export default function Signup({ onSuccess, onSwitchToLogin }: SignupProps) {
       setTimeout(() => {
         onSuccess();
       }, 1500);
-    } catch (err: any) {
+    },
+    onError: (err: any) => {
       console.error('Signup error:', err);
 
       let errorMessage = 'Failed to create account. Please try again.';
@@ -55,8 +43,20 @@ export default function Signup({ onSuccess, onSwitchToLogin }: SignupProps) {
       }
 
       setError(errorMessage);
-      setLoading(false);
-    }
+    },
+  });
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    signupMutation.mutate({
+      clinicName,
+      name,
+      email,
+      password,
+    });
   };
 
   return (
@@ -134,8 +134,8 @@ export default function Signup({ onSuccess, onSwitchToLogin }: SignupProps) {
             </p>
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Creating Account...' : 'Create Account'}
+          <Button type="submit" className="w-full" disabled={signupMutation.isPending}>
+            {signupMutation.isPending ? 'Creating Account...' : 'Create Account'}
           </Button>
         </form>
 
