@@ -24,6 +24,24 @@ export async function initializeDatabase(): Promise<void> {
       FOR (u:User) REQUIRE u.email IS UNIQUE
     `);
 
+    // Patient constraints
+    await session.run(`
+      CREATE CONSTRAINT patient_id IF NOT EXISTS
+      FOR (p:Patient) REQUIRE p.id IS UNIQUE
+    `);
+
+    // Visit constraints
+    await session.run(`
+      CREATE CONSTRAINT visit_id IF NOT EXISTS
+      FOR (v:Visit) REQUIRE v.id IS UNIQUE
+    `);
+
+    // Recording constraints
+    await session.run(`
+      CREATE CONSTRAINT recording_id IF NOT EXISTS
+      FOR (r:Recording) REQUIRE r.id IS UNIQUE
+    `);
+
     // Indexes for better query performance
     await session.run(`
       CREATE INDEX clinic_name IF NOT EXISTS
@@ -33,6 +51,26 @@ export async function initializeDatabase(): Promise<void> {
     await session.run(`
       CREATE INDEX user_clinic IF NOT EXISTS
       FOR (u:User) ON (u.clinicId)
+    `);
+
+    await session.run(`
+      CREATE INDEX patient_clinic IF NOT EXISTS
+      FOR (p:Patient) ON (p.clinicId)
+    `);
+
+    await session.run(`
+      CREATE INDEX visit_clinic IF NOT EXISTS
+      FOR (v:Visit) ON (v.clinicId)
+    `);
+
+    await session.run(`
+      CREATE INDEX visit_patient IF NOT EXISTS
+      FOR (v:Visit) ON (v.patientId)
+    `);
+
+    await session.run(`
+      CREATE INDEX recording_visit IF NOT EXISTS
+      FOR (r:Recording) ON (r.visitId)
     `);
 
     console.log('Database initialized successfully');

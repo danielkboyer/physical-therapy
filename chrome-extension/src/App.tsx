@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
-import Dashboard from './components/Dashboard';
+import Dashboard, { type DashboardState } from './components/Dashboard';
 import ProfilePage from './pages/ProfilePage';
 
 type View = 'signup' | 'login' | 'dashboard' | 'profile';
@@ -16,6 +16,8 @@ interface StoredUser {
 function App() {
   const [currentView, setCurrentView] = useState<View>('signup');
   const [user, setUser] = useState<StoredUser | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [savedDashboardState, setSavedDashboardState] = useState<DashboardState | undefined>(undefined);
 
   useEffect(() => {
     // Check if user is logged in
@@ -42,10 +44,12 @@ function App() {
     chrome.storage.local.remove(['user', 'isLoggedIn'], () => {
       setUser(null);
       setCurrentView('login');
+      setSavedDashboardState(undefined);
     });
   };
 
-  const handleProfileClick = () => {
+  const handleProfileClick = (state: DashboardState) => {
+    setSavedDashboardState(state);
     setCurrentView('profile');
   };
 
@@ -72,6 +76,9 @@ function App() {
           user={user}
           onLogout={handleLogout}
           onProfileClick={handleProfileClick}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          initialState={savedDashboardState}
         />
       )}
       {currentView === 'profile' && user && (
