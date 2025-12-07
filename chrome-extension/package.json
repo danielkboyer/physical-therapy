@@ -1,19 +1,32 @@
 {
   "name": "chrome-extension",
   "version": "1.0.0",
-  "description": "Chrome extension for recording physical therapy sessions with audio capture.",
-  "main": "background.js",
+  "description": "Chrome extension with React and tRPC",
+  "type": "module",
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc --watch",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "dependencies": {
+    "@pt-app/shared-ui": "file:../shared-ui",
+    "@trpc/client": "^11.0.0-rc.673",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.23.8"
+  },
   "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.25",
+    "@tailwindcss/postcss": "^4",
     "@types/chrome": "^0.1.32",
     "@types/node": "^24.10.1",
-    "typescript": "^5.9.3"
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^4",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.3"
   }
 }
