@@ -9,7 +9,8 @@
  */
 
 const neo4j = require('neo4j-driver');
-require('dotenv').config({ path: './web-app/.env.local' });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../web-app/.env.local') });
 
 const driver = neo4j.driver(
   process.env.NEO4J_URI,
@@ -24,12 +25,16 @@ async function clearPTData() {
 
     // Count existing data
     const counts = await session.run(`
-      RETURN
-        size((n:Clinic)) as clinics,
-        size((n:Location)) as locations,
-        size((n:User)) as users,
-        size((n:Customer)) as customers,
-        size((n:Session)) as sessions
+      OPTIONAL MATCH (c:Clinic)
+      WITH count(c) as clinics
+      OPTIONAL MATCH (l:Location)
+      WITH clinics, count(l) as locations
+      OPTIONAL MATCH (u:User) WHERE u.role IN ['admin', 'therapist']
+      WITH clinics, locations, count(u) as users
+      OPTIONAL MATCH (cust:Customer)
+      WITH clinics, locations, users, count(cust) as customers
+      OPTIONAL MATCH (s:Session)
+      RETURN clinics, locations, users, customers, count(s) as sessions
     `);
 
     const record = counts.records[0];
@@ -95,12 +100,16 @@ async function clearPTData() {
 
     // Verify deletion
     const afterCounts = await session.run(`
-      RETURN
-        size((n:Clinic)) as clinics,
-        size((n:Location)) as locations,
-        size((n:User)) as users,
-        size((n:Customer)) as customers,
-        size((n:Session)) as sessions
+      OPTIONAL MATCH (c:Clinic)
+      WITH count(c) as clinics
+      OPTIONAL MATCH (l:Location)
+      WITH clinics, count(l) as locations
+      OPTIONAL MATCH (u:User) WHERE u.role IN ['admin', 'therapist']
+      WITH clinics, locations, count(u) as users
+      OPTIONAL MATCH (cust:Customer)
+      WITH clinics, locations, users, count(cust) as customers
+      OPTIONAL MATCH (s:Session)
+      RETURN clinics, locations, users, customers, count(s) as sessions
     `);
 
     const afterRecord = afterCounts.records[0];

@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
-import { getSessionsByClinicId } from '@/lib/db/session';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { signOut } from 'next-auth/react';
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -10,114 +11,65 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  const sessions = await getSessionsByClinicId(user.clinicId, 10);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">PT Session Dashboard</h1>
+            <h1 className="text-2xl font-bold">Dashboard</h1>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">
-                {user.name} ({user.role})
+                Welcome, {user.name || user.email}
               </span>
-              <a
-                href="/api/auth/signout"
-                className="text-sm text-blue-600 hover:underline"
-              >
-                Sign Out
-              </a>
+              <form action="/api/auth/signout" method="POST">
+                <Button variant="outline" type="submit">
+                  Sign Out
+                </Button>
+              </form>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <main className="container mx-auto px-4 py-8">
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader>
-              <CardTitle>Total Sessions</CardTitle>
-              <CardDescription>All time</CardDescription>
+              <CardTitle>Metric 1</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{sessions.length}</p>
+              <div className="text-3xl font-bold">0</div>
+              <p className="text-sm text-gray-600">Description</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Active Recording</CardTitle>
-              <CardDescription>Currently recording</CardDescription>
+              <CardTitle>Metric 2</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">
-                {sessions.filter(s => s.status === 'recording').length}
-              </p>
+              <div className="text-3xl font-bold">0</div>
+              <p className="text-sm text-gray-600">Description</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Completed</CardTitle>
-              <CardDescription>Finished sessions</CardDescription>
+              <CardTitle>Metric 3</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">
-                {sessions.filter(s => s.status === 'completed').length}
-              </p>
+              <div className="text-3xl font-bold">0</div>
+              <p className="text-sm text-gray-600">Description</p>
             </CardContent>
           </Card>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Recent Sessions</CardTitle>
-            <CardDescription>Your latest therapy sessions</CardDescription>
+            <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            {sessions.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <p className="mb-4">No sessions recorded yet</p>
-                <p className="text-sm">
-                  Install the Chrome extension to start recording sessions
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {sessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {session.customerName || 'Guest Customer'}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {new Date(session.startedAt).toLocaleString()}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Duration: {Math.floor(session.duration / 60)}m {session.duration % 60}s
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          session.status === 'recording'
-                            ? 'bg-red-100 text-red-700'
-                            : session.status === 'completed'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}
-                      >
-                        {session.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <p className="text-gray-600">No activity yet. Start building!</p>
           </CardContent>
         </Card>
       </main>

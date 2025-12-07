@@ -1,6 +1,5 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { getUserByEmail, verifyPassword } from '@/lib/db/user';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -15,25 +14,13 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = await getUserByEmail(credentials.email);
+        // TODO: Implement your authentication logic here
+        // Example: Query your database to verify credentials
+        // const user = await getUserByEmail(credentials.email);
+        // const isValid = await verifyPassword(user, credentials.password);
 
-        if (!user) {
-          return null;
-        }
-
-        const isValid = await verifyPassword(user, credentials.password);
-
-        if (!isValid) {
-          return null;
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: `${user.firstName} ${user.lastName}`,
-          role: user.role,
-          clinicId: user.clinicId
-        };
+        // For now, return null (no authentication)
+        return null;
       }
     })
   ],
@@ -47,16 +34,14 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role;
-        token.clinicId = user.clinicId;
+        // Add any custom fields to the token
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as 'admin' | 'therapist';
-        session.user.clinicId = token.clinicId as string;
+        // Add any custom fields to the session
       }
       return session;
     }

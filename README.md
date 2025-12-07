@@ -1,6 +1,6 @@
-# AI Physical Therapy App
+# Full-Stack Application Starter
 
-An AI-powered platform for physical therapy clinics to record, transcribe, and analyze therapy sessions.
+A clean architecture starter template with Next.js, Neo4j, and Chrome Extension integration.
 
 ## Project Structure
 
@@ -8,61 +8,31 @@ An AI-powered platform for physical therapy clinics to record, transcribe, and a
 PhysicalTherapyApp/
 ├── web-app/              # Next.js web application
 │   ├── app/              # App router pages and API routes
-│   ├── components/       # React components
+│   ├── components/       # React components (Radix UI + Tailwind)
 │   ├── lib/              # Utilities and database functions
 │   └── types/            # TypeScript type definitions
-├── chrome-extension/     # Chrome extension for session recording
+├── chrome-extension/     # Chrome extension
 │   ├── manifest.json     # Extension configuration
 │   ├── popup.html        # Extension UI
-│   ├── popup.js          # Recording logic
-│   └── background.js     # Background service worker
+│   ├── src/              # TypeScript source files
+│   └── dist/             # Compiled JavaScript
 └── README.md
 ```
-
-## Features
-
-### v1 Features
-
-- **Clinic Management**
-  - Multi-clinic support with admin roles
-  - Multiple locations per clinic
-  - User management (admin and therapist roles)
-  - Users can work at multiple locations
-
-- **Session Recording**
-  - Chrome extension for audio capture
-  - High-quality audio recording (44.1kHz)
-  - Real-time recording with visual feedback
-  - Associate sessions with customers or guests
-  - Automatic session upload
-
-- **Customer Management**
-  - Create and manage customer profiles
-  - Guest customer support (no profile needed)
-  - Search and filter customers
-
-- **Data Model**
-  - Graph database (Neo4j) for complex relationships
-  - Clinics → Locations → Users
-  - Sessions linked to therapists, locations, and customers
-  - Full audit trail with timestamps
 
 ## Tech Stack
 
 ### Web Application
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
-- **UI**: ShadCN + Tailwind CSS
+- **UI**: Radix UI + Tailwind CSS v4
 - **Database**: Neo4j (graph database)
 - **Authentication**: NextAuth.js
 - **Hosting**: Vercel
-- **AI**: Vercel AI SDK (planned for v2)
 
 ### Chrome Extension
 - **Manifest**: V3
-- **Audio API**: MediaRecorder API
 - **Storage**: Chrome Storage API
-- **Permissions**: tabCapture, storage, activeTab
+- **Permissions**: activeTab, storage, tabCapture
 
 ## Getting Started
 
@@ -83,7 +53,7 @@ npm install
 
 #### 2. Configure Environment Variables
 
-Copy `.env.example` to `.env.local` and fill in your values:
+Create `.env.local` in the `web-app` directory:
 
 ```env
 # Neo4j Configuration
@@ -99,15 +69,7 @@ NEXTAUTH_SECRET=your-secret-key-change-this-in-production
 EXTENSION_ORIGIN=chrome-extension://your-extension-id
 ```
 
-#### 3. Initialize Database
-
-The database schema will be created automatically on first run, or you can manually initialize:
-
-```bash
-npm run init-db  # You'll need to create this script
-```
-
-#### 4. Run Development Server
+#### 3. Run Development Server
 
 ```bash
 npm run dev
@@ -115,132 +77,84 @@ npm run dev
 
 Visit [http://localhost:3000](http://localhost:3000)
 
-#### 5. Install Chrome Extension
+#### 4. Chrome Extension Setup
 
+```bash
+cd chrome-extension
+npm install
+npm run build  # Compile TypeScript to JavaScript
+```
+
+Then install in Chrome:
 1. Open Chrome and navigate to `chrome://extensions/`
 2. Enable "Developer mode"
 3. Click "Load unpacked"
 4. Select the `chrome-extension` folder
 5. Note the extension ID and update `.env.local`
 
-## Database Schema
+## Architecture Overview
 
-### Nodes
+### Database Layer (Neo4j)
 
-- **Clinic**: Represents a physical therapy clinic organization
-- **Location**: Physical locations where therapy is provided
-- **User**: Therapists and admin users
-- **Customer**: Patients receiving therapy
-- **Session**: Individual therapy sessions with audio recordings
+The app uses Neo4j as a graph database. Connection setup is in [web-app/lib/neo4j.ts](web-app/lib/neo4j.ts).
 
-### Relationships
+Example database operations are in [web-app/lib/db/example.ts](web-app/lib/db/example.ts).
 
-```
-Clinic -[:HAS_LOCATION]-> Location
-Clinic -[:HAS_USER]-> User
-Clinic -[:HAS_CUSTOMER]-> Customer
-Clinic -[:HAS_SESSION]-> Session
-User -[:WORKS_AT]-> Location
-User -[:CONDUCTED_SESSION]-> Session
-Location -[:HOSTED_SESSION]-> Session
-Session -[:WITH_CUSTOMER]-> Customer
-```
-
-## User Flow
-
-### Initial Setup
-
-1. **Sign Up**: Create clinic account (becomes admin user)
-2. **Onboarding**:
-   - Add clinic locations
-   - Invite team members (therapists)
-3. **Chrome Extension**: Install and authenticate
-
-### Recording Sessions
-
-1. Open Chrome extension
-2. Select location
-3. Enter customer name (or leave as guest)
-4. Click "Start Recording"
-5. Conduct therapy session
-6. Click "Stop Recording"
-7. Audio automatically uploaded and saved
-
-### Managing Sessions
-
-1. View all sessions in dashboard
-2. Filter by therapist, customer, location
-3. Play back audio recordings
-4. (v2) View AI-generated transcripts and analysis
-
-## API Routes
+To initialize your database schema, edit [web-app/lib/db/init.ts](web-app/lib/db/init.ts).
 
 ### Authentication
-- `POST /api/auth/signup` - Create new clinic account
-- `POST /api/auth/[...nextauth]` - NextAuth endpoints
 
-### Onboarding
-- `POST /api/onboarding/locations` - Add locations during setup
-- `POST /api/onboarding/team` - Add team members during setup
+NextAuth.js is configured in [web-app/app/api/auth/[...nextauth]/route.ts](web-app/app/api/auth/[...nextauth]/route.ts).
 
-### Locations
-- `GET /api/locations` - Get all locations for clinic
+Auth helpers are in [web-app/lib/auth.ts](web-app/lib/auth.ts):
+- `getSession()` - Get current session
+- `getCurrentUser()` - Get current user
+- `requireAuth()` - Enforce authentication
+- `requireAdmin()` - Enforce admin role
 
-### Customers
-- `GET /api/customers` - Get all customers (supports search)
-- `POST /api/customers` - Create new customer
+### API Routes
 
-### Sessions
-- `GET /api/sessions` - Get all sessions (supports filtering)
-- `POST /api/sessions` - Create new session
-- `GET /api/sessions/[id]` - Get session by ID
-- `PATCH /api/sessions/[id]` - Update session
-- `POST /api/sessions/[id]` - End session and upload audio
+Example API route: [web-app/app/api/example/route.ts](web-app/app/api/example/route.ts)
 
-## Audio Recording Details
+### Pages
 
-### Format
-- **Codec**: WebM
-- **Sample Rate**: 44.1kHz
-- **Features**: Echo cancellation, noise suppression
-- **Chunks**: Recorded in 1-second intervals
+- **Home**: [web-app/app/page.tsx](web-app/app/page.tsx) - Landing page
+- **Login**: [web-app/app/login/page.tsx](web-app/app/login/page.tsx) - Authentication
+- **Dashboard**: [web-app/app/dashboard/page.tsx](web-app/app/dashboard/page.tsx) - Main app view
 
-### Storage
-Currently stored as base64 in Neo4j. For production:
-- Upload to cloud storage (S3, GCS, etc.)
-- Store URL reference in database
-- Implement streaming for large files
+### Chrome Extension
 
-### Transcription (Planned v2)
-- Use Vercel AI SDK with Whisper API
-- Real-time or post-processing transcription
-- Store transcript with session
+- **Background Worker**: [chrome-extension/src/background.ts](chrome-extension/src/background.ts)
+- **Popup UI**: [chrome-extension/src/popup.ts](chrome-extension/src/popup.ts)
+- **Manifest**: [chrome-extension/manifest.json](chrome-extension/manifest.json)
 
-## Security Considerations
+The extension communicates with your Next.js API using `fetch` with credentials.
 
-### Authentication
-- Password hashing with bcrypt (10 rounds)
-- JWT-based sessions via NextAuth
-- Secure HTTP-only cookies
+## CORS Setup
 
-### CORS
-- Restricted to specific extension origin
-- Credentials required for API access
+The middleware in [web-app/middleware.ts](web-app/middleware.ts) handles CORS for the Chrome extension.
 
-### Data Privacy
-- HIPAA compliance considerations
-- Encrypted data at rest (Neo4j TLS)
-- Audit logging on all data access
+Update `EXTENSION_ORIGIN` in your `.env.local` with your extension's origin (e.g., `chrome-extension://abc123...`).
 
-### Production Checklist
-- [ ] Change all default secrets
-- [ ] Enable Neo4j encryption
-- [ ] Set up proper CORS origins
-- [ ] Implement rate limiting
-- [ ] Add input validation middleware
-- [ ] Set up error monitoring (Sentry)
-- [ ] Configure CSP headers
-- [ ] Regular security audits
+## Building Your App
+
+This is a clean slate - the business logic has been removed. Here's how to get started:
+
+1. **Define Your Data Model**
+   - Edit [web-app/lib/db/init.ts](web-app/lib/db/init.ts) to create constraints and indexes
+   - Create model files in `web-app/lib/db/` (see `example.ts` for reference)
+
+2. **Create API Routes**
+   - Add routes in `web-app/app/api/`
+   - Use the example route as a template
+
+3. **Build Your UI**
+   - Add pages in `web-app/app/`
+   - Use existing UI components from `components/ui/`
+
+4. **Extend the Chrome Extension**
+   - Add functionality to `src/popup.ts` and `src/background.ts`
+   - Update permissions in `manifest.json` as needed
 
 ## Deployment
 
@@ -253,64 +167,20 @@ Currently stored as base64 in Neo4j. For production:
 
 ### Chrome Extension Publication
 
-1. Create developer account
-2. Package extension
-3. Submit to Chrome Web Store
-4. Update manifest with production URLs
+1. Build the extension: `cd chrome-extension && npm run build`
+2. Create a ZIP of the chrome-extension folder
+3. Upload to Chrome Web Store
 
-## Future Enhancements (v2+)
+## Security Checklist
 
-### AI Features
-- Real-time transcription during sessions
-- Automatic SOAP note generation
-- Exercise recommendation based on diagnosis
-- Progress tracking and insights
-- Voice commands during sessions
-
-### Additional Features
-- Video recording support
-- Mobile app for therapists
-- Patient portal for viewing progress
-- Billing integration
-- Scheduling system
-- Analytics dashboard
-
-### Technical Improvements
-- WebSocket for real-time updates
-- Offline mode support
-- Audio compression
-- Cloud storage integration
-- Multi-language support
-
-## Troubleshooting
-
-### Extension Not Recording
-- Check microphone permissions in Chrome
-- Verify extension has `tabCapture` permission
-- Check console for errors
-
-### Authentication Issues
-- Clear cookies and try again
-- Verify NEXTAUTH_SECRET is set
-- Check CORS configuration
-
-### Database Connection
-- Verify Neo4j instance is running
-- Check credentials in .env.local
-- Ensure network access to Neo4j
-
-## Contributing
-
-1. Fork the repository
-2. Create feature branch
-3. Make changes
-4. Test thoroughly
-5. Submit pull request
+- [ ] Change all default secrets
+- [ ] Enable Neo4j encryption
+- [ ] Set up proper CORS origins
+- [ ] Implement rate limiting
+- [ ] Add input validation
+- [ ] Set up error monitoring
+- [ ] Configure CSP headers
 
 ## License
 
-Proprietary - All rights reserved
-
-## Support
-
-For issues and questions, please contact support or create an issue in the repository.
+MIT License - feel free to use this as a starter for your own projects.

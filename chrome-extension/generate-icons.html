@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+</head>
+<body>
+    <canvas id="canvas16" width="16" height="16"></canvas>
+    <canvas id="canvas48" width="48" height="48"></canvas>
+    <canvas id="canvas128" width="128" height="128"></canvas>
+
+    <script>
+        const sizes = [16, 48, 128];
+
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const scale = size / 128;
+
+            // Background with rounded corners
+            ctx.fillStyle = '#4A90E2';
+            ctx.fillRect(0, 0, size, size);
+
+            // Scale context
+            ctx.scale(scale, scale);
+
+            // Head
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(64, 45, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body and limbs
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(64, 60);
+            ctx.lineTo(64, 85);
+            ctx.stroke();
+
+            // Arms
+            ctx.beginPath();
+            ctx.moveTo(50, 70);
+            ctx.lineTo(64, 70);
+            ctx.lineTo(78, 70);
+            ctx.stroke();
+
+            // Legs
+            ctx.beginPath();
+            ctx.moveTo(64, 85);
+            ctx.lineTo(55, 105);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(64, 85);
+            ctx.lineTo(73, 105);
+            ctx.stroke();
+
+            // Red dots (pain points)
+            ctx.fillStyle = 'rgba(255, 107, 107, 0.8)';
+            ctx.beginPath();
+            ctx.arc(40, 95, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(88, 95, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // PT text
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('PT', 64, 120);
+        }
+
+        sizes.forEach(size => {
+            const canvas = document.getElementById(`canvas${size}`);
+            drawIcon(canvas, size);
+
+            // Download
+            const link = document.createElement('a');
+            link.download = `icon${size}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.textContent = `Download icon${size}.png`;
+            link.style.display = 'block';
+            link.style.margin = '10px';
+            document.body.appendChild(link);
+        });
+    </script>
+</body>
+</html>

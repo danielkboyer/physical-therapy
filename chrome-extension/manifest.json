@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "PT Session Recorder",
+  "name": "Chrome Extension",
   "version": "1.0.0",
-  "description": "Record physical therapy sessions with audio transcription",
+  "description": "Chrome extension with Next.js backend integration",
   "permissions": [
     "activeTab",
     "storage",
@@ -13,7 +13,7 @@
     "https://*.vercel.app/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "dist/background.js"
   },
   "action": {
     "default_popup": "popup.html",

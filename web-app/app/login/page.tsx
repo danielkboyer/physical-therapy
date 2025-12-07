@@ -48,7 +48,7 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle>Sign In</CardTitle>
           <CardDescription>
-            Sign in to your PT clinic account
+            Sign in to your account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -60,7 +60,7 @@ export default function LoginPage() {
                 name="email"
                 type="email"
                 required
-                placeholder="you@clinic.com"
+                placeholder="you@example.com"
               />
             </div>
 
@@ -84,13 +84,6 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing In...' : 'Sign In'}
             </Button>
-
-            <div className="text-center text-sm">
-              Don't have an account?{' '}
-              <a href="/signup" className="text-blue-600 hover:underline">
-                Sign up
-              </a>
-            </div>
           </form>
         </CardContent>
       </Card>
