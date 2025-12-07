@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import Signup from './components/Signup';
-import Login from './components/Login';
+import Signup from './pages/Signup';
+import Login from './pages/Login';
 import Dashboard from './components/Dashboard';
+import ProfilePage from './pages/ProfilePage';
 
-type View = 'signup' | 'login' | 'dashboard';
+type View = 'signup' | 'login' | 'dashboard' | 'profile';
 
 interface StoredUser {
   id: string;
@@ -20,7 +21,7 @@ function App() {
     // Check if user is logged in
     chrome.storage.local.get(['user', 'isLoggedIn'], (result) => {
       if (result.isLoggedIn && result.user) {
-        setUser(result.user);
+        setUser(result.user as StoredUser);
         setCurrentView('dashboard');
       } else {
         setCurrentView('login');
@@ -44,6 +45,14 @@ function App() {
     });
   };
 
+  const handleProfileClick = () => {
+    setCurrentView('profile');
+  };
+
+  const handleBackToDashboard = () => {
+    setCurrentView('dashboard');
+  };
+
   return (
     <>
       {currentView === 'signup' && (
@@ -59,7 +68,18 @@ function App() {
         />
       )}
       {currentView === 'dashboard' && user && (
-        <Dashboard user={user} onLogout={handleLogout} />
+        <Dashboard
+          user={user}
+          onLogout={handleLogout}
+          onProfileClick={handleProfileClick}
+        />
+      )}
+      {currentView === 'profile' && user && (
+        <ProfilePage
+          user={user}
+          onBack={handleBackToDashboard}
+          onLogout={handleLogout}
+        />
       )}
     </>
   );

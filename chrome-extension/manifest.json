@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "PT Clinic Manager",
+  "name": "PT AI",
   "version": "1.0.0",
-  "description": "Physical therapy clinic management chrome extension",
+  "description": "AI-powered physical therapy clinic management",
   "permissions": [
     "activeTab",
     "storage",
