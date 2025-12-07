@@ -42,9 +42,18 @@ export default function IntegrationsPage({ clinicId }: IntegrationsPageProps) {
   const [selectedIntegration, setSelectedIntegration] = useState<IntegrationCardData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { data: activeIntegrations, isLoading } = trpc.emrIntegration.getByClinic.useQuery({
-    clinicId,
-  });
+  const { data: activeIntegrations, isPending, isFetching } = trpc.emrIntegration.getByClinic.useQuery(
+    {
+      clinicId,
+    },
+    {
+      retry: false,
+      refetchOnWindowFocus: false,
+    }
+  );
+
+  // Only show loading on initial load, not on refetches
+  const isInitialLoad = isPending && isFetching;
 
   const isIntegrationActive = (emrType: string) => {
     return activeIntegrations?.some(
@@ -67,7 +76,7 @@ export default function IntegrationsPage({ clinicId }: IntegrationsPageProps) {
         </p>
       </div>
 
-      {isLoading ? (
+      {isInitialLoad ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Object.keys(availableIntegrations).map((key) => (
             <Card key={key} className="p-6 animate-pulse">
