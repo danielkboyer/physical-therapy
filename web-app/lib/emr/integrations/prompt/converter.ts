@@ -7,10 +7,10 @@ export class PromptDataConverter implements IEmrDataConverter {
     const patient = emrPatient as PromptPatient;
 
     return {
-      firstName: patient.firstName,
-      lastName: patient.lastName,
-      nickName: patient.preferredName,
-      externalId: patient.id,
+      firstName: patient.FirstName,
+      lastName: patient.LastName,
+      nickName: patient.PreferredName,
+      externalId: patient.PatientId, // Use PatientId as the external ID
     };
   }
 

@@ -16,29 +16,29 @@ export class PromptPageDetector implements IEmrPageDetector {
       };
     }
 
-    // TODO: Implement actual page detection logic based on Prompt EMR's URL structure and DOM
-    // This is a placeholder implementation
-
     const context: EmrPageContext = {
       pageType: EmrPageType.UNKNOWN,
       url,
     };
 
-    // Example detection logic (update based on actual Prompt EMR structure):
-    if (url.includes("/patients") && url.match(/\/patients\/\d+/)) {
-      // URL pattern like: /patients/123
-      const patientId = url.match(/\/patients\/(\d+)/)?.[1];
-      context.pageType = EmrPageType.PATIENT_PROFILE;
-      context.patientId = patientId;
+    // URL pattern: https://go.promptemr.com/patients/{uuid}
+    if (url.includes("/patients/")) {
+      const match = url.match(/\/patients\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+      if (match) {
+        context.pageType = EmrPageType.PATIENT_PROFILE;
+        context.patientId = match[1];
+      } else {
+        context.pageType = EmrPageType.PATIENT_LIST;
+      }
     } else if (url.includes("/patients")) {
-      // URL pattern like: /patients
       context.pageType = EmrPageType.PATIENT_LIST;
-    } else if (url.includes("/visits") && url.match(/\/visits\/\d+/)) {
-      // URL pattern like: /visits/123
-      const visitId = url.match(/\/visits\/(\d+)/)?.[1];
-      context.pageType = EmrPageType.VISIT;
-      context.visitId = visitId;
-    } else if (url.includes("/schedule")) {
+    } else if (url.includes("/visits/")) {
+      const match = url.match(/\/visits\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+      if (match) {
+        context.pageType = EmrPageType.VISIT;
+        context.visitId = match[1];
+      }
+    } else if (url.includes("/schedule") || url.includes("/calendar")) {
       context.pageType = EmrPageType.SCHEDULE;
     } else if (url.includes("/documentation") || url.includes("/notes")) {
       context.pageType = EmrPageType.DOCUMENTATION;

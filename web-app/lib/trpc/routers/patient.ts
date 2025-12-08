@@ -20,8 +20,9 @@ export const patientSchema = z.object({
 export const createPatientSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  nickName: z.string().optional(),
+  nickName: z.string().nullish(),
   clinicId: z.string(),
+  externalId: z.string(),
 });
 
 export const updatePatientSchema = z.object({
@@ -39,8 +40,9 @@ export const patientRouter = router({
       return await createPatient(
         input.firstName,
         input.lastName,
-        input.nickName,
-        input.clinicId
+        input.nickName ?? undefined,
+        input.clinicId,
+        input.externalId
       );
     }),
 
