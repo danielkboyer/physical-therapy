@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, Input, Button, Label } from '@pt-app/shared-ui';
 import { ArrowLeft, Save } from 'lucide-react';
 import { trpc } from '../trpc-client';
@@ -30,12 +30,15 @@ export default function PatientProfilePage({
     patientId,
   });
 
-  // Update form fields when patient data loads
-  if (patient && !isEditing && !firstName && !lastName) {
-    setFirstName(patient.firstName);
-    setLastName(patient.lastName);
-    setNickName(patient.nickName || '');
-  }
+  // Update form fields when patient data loads or patientId changes
+  useEffect(() => {
+    if (patient) {
+      setFirstName(patient.firstName);
+      setLastName(patient.lastName);
+      setNickName(patient.nickName || '');
+      setIsEditing(false);
+    }
+  }, [patient]);
 
   const updatePatientMutation = trpc.patient.update.useMutation({
     onSuccess: () => {

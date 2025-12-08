@@ -170,14 +170,30 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [savedDashboardState, setSavedDashboardState] = useState<DashboardState | undefined>(undefined);
 
+  // Get tRPC utils for invalidation
+  const utils = trpc.useUtils();
+
   // Check for integrations when user logs in
   const { data: integrations } = trpc.emrIntegration.getByClinic.useQuery(
     { clinicId: user?.clinicId || '' },
     { enabled: !!user?.clinicId }
   );
 
-  // Create patient mutation
-  const createPatientMutation = trpc.patient.create.useMutation();
+  // Create patient mutation with automatic query invalidation
+  const createPatientMutation = trpc.patient.create.useMutation({
+    onSuccess: (createdPatient) => {
+      // Invalidate the patients query to refresh the list
+      utils.patient.getByClinic.invalidate({ clinicId: createdPatient.clinicId });
+
+      // Navigate to the patient profile
+      setSavedDashboardState({
+        currentView: { type: 'patient-profile', patientId: createdPatient.id },
+        currentTab: 'patients',
+        searchQuery: '',
+      });
+      setCurrentView('dashboard');
+    },
+  });
 
   useEffect(() => {
     // Check if user is logged in
@@ -243,7 +259,7 @@ function App() {
           await createPatientMutation.mutateAsync({
             firstName: patientData.firstName,
             lastName: patientData.lastName,
-            nickName: patientData.nickName,
+            nickName: patientData.nickName || null,
             clinicId: user.clinicId,
             externalId: patientId,
           });

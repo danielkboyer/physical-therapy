@@ -21,21 +21,38 @@ export async function createPatient(
   const session = getSession();
 
   try {
+    // Use MERGE to upsert based on clinicId and externalId
+    // If patient exists, update all fields; if not, create new
+    const params: Record<string, any> = {
+      firstName,
+      lastName,
+      clinicId,
+      externalId,
+    };
+
+    // Only include nickName if it has a value
+    if (nickName !== undefined && nickName !== null) {
+      params.nickName = nickName;
+    }
+
     const result = await session.run(
       `
-      CREATE (p:Patient {
-        id: randomUUID(),
-        firstName: $firstName,
-        lastName: $lastName,
-        nickName: $nickName,
-        clinicId: $clinicId,
-        externalId: $externalId,
-        createdAt: datetime(),
-        updatedAt: datetime()
-      })
+      MERGE (p:Patient {clinicId: $clinicId, externalId: $externalId})
+      ON CREATE SET
+        p.id = randomUUID(),
+        p.firstName = $firstName,
+        p.lastName = $lastName,
+        ${nickName !== undefined && nickName !== null ? 'p.nickName = $nickName,' : ''}
+        p.createdAt = datetime(),
+        p.updatedAt = datetime()
+      ON MATCH SET
+        p.firstName = $firstName,
+        p.lastName = $lastName,
+        ${nickName !== undefined && nickName !== null ? 'p.nickName = $nickName,' : ''}
+        p.updatedAt = datetime()
       RETURN p
       `,
-      { firstName, lastName, nickName, clinicId, externalId }
+      params
     );
 
     const node = result.records[0].get('p');
