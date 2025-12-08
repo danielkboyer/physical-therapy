@@ -7,15 +7,20 @@ interface VisitsPageProps {
   searchQuery: string;
   clinicId: string;
   onVisitClick: (visitId: string) => void;
+  onNavigateToIntegrations?: () => void;
 }
 
-export default function VisitsPage({ searchQuery, clinicId, onVisitClick }: VisitsPageProps) {
-  const { data: visits = [], isLoading: visitsLoading } = trpc.visit.getByClinic.useQuery({
+export default function VisitsPage({ searchQuery, clinicId, onVisitClick, onNavigateToIntegrations }: VisitsPageProps) {
+  const { data: visits = [], isPending: visitsPending } = trpc.visit.getByClinic.useQuery({
     clinicId,
   });
 
   // Get all patients to show names
-  const { data: patients = [], isLoading: patientsLoading } = trpc.patient.getByClinic.useQuery({
+  const { data: patients = [], isPending: patientsPending } = trpc.patient.getByClinic.useQuery({
+    clinicId,
+  });
+
+  const { data: integrations } = trpc.emrIntegration.getByClinic.useQuery({
     clinicId,
   });
 
@@ -47,7 +52,7 @@ export default function VisitsPage({ searchQuery, clinicId, onVisitClick }: Visi
     });
   }, [visitsWithPatients, searchQuery]);
 
-  const loading = visitsLoading || patientsLoading;
+  const loading = visitsPending || patientsPending;
 
   if (loading) {
     return (
@@ -86,9 +91,28 @@ export default function VisitsPage({ searchQuery, clinicId, onVisitClick }: Visi
         </CardHeader>
         <CardContent>
           {filteredVisits.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {searchQuery ? 'No visits found matching your search.' : 'No visits yet.'}
-            </p>
+            <div className="text-sm text-muted-foreground">
+              {searchQuery ? (
+                <p>No visits found matching your search.</p>
+              ) : (
+                <>
+                  {!integrations?.some(int => int.isActive) ? (
+                    <p>
+                      No visits yet. To get started, go to{' '}
+                      <button
+                        onClick={onNavigateToIntegrations}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        integrations
+                      </button>{' '}
+                      and setup your EMR.
+                    </p>
+                  ) : (
+                    <p>No visits yet.</p>
+                  )}
+                </>
+              )}
+            </div>
           ) : (
             <div className="space-y-2">
               {filteredVisits.map((visit) => (

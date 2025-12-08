@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { trpc } from '../trpc-client';
 import { Button, Card } from '@pt-app/shared-ui';
-import { Plug, Check, Clock } from 'lucide-react';
+import { Plug, Check, Clock, Trash2 } from 'lucide-react';
 import EnableIntegrationModal from '../components/EnableIntegrationModal';
 import { EmrType } from '@pt-app/shared-models';
 
@@ -42,29 +42,42 @@ export default function IntegrationsPage({ clinicId }: IntegrationsPageProps) {
   const [selectedIntegration, setSelectedIntegration] = useState<IntegrationCardData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { data: activeIntegrations, isPending, isFetching } = trpc.emrIntegration.getByClinic.useQuery(
-    {
-      clinicId,
+  const utils = trpc.useUtils();
+  const { data: activeIntegrations, isPending } = trpc.emrIntegration.getByClinic.useQuery({
+    clinicId,
+  });
+
+  const deleteIntegrationMutation = trpc.emrIntegration.delete.useMutation({
+    onSuccess: () => {
+      // Invalidate and refetch integrations
+      utils.emrIntegration.getByClinic.invalidate({ clinicId });
     },
-    {
-      retry: false,
-      refetchOnWindowFocus: false,
-    }
-  );
+  });
 
-  // Only show loading on initial load, not on refetches
-  const isInitialLoad = isPending && isFetching;
-
-  const isIntegrationActive = (emrType: string) => {
-    return activeIntegrations?.some(
+  const getActiveIntegration = (emrType: string) => {
+    return activeIntegrations?.find(
       (integration) => integration.emrType === emrType && integration.isActive
     );
+  };
+
+  const isIntegrationActive = (emrType: string) => {
+    return !!getActiveIntegration(emrType);
   };
 
   const handleConnectClick = (integration: IntegrationCardData) => {
     if (!integration.available) return;
     setSelectedIntegration(integration);
     setIsModalOpen(true);
+  };
+
+  const handleDeleteClick = async (emrType: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const integration = getActiveIntegration(emrType);
+    if (!integration) return;
+
+    if (confirm(`Are you sure you want to disconnect ${availableIntegrations[emrType as EmrType].name}? This will not delete any patients or visits.`)) {
+      await deleteIntegrationMutation.mutateAsync({ id: integration.id });
+    }
   };
 
   return (
@@ -76,7 +89,7 @@ export default function IntegrationsPage({ clinicId }: IntegrationsPageProps) {
         </p>
       </div>
 
-      {isInitialLoad ? (
+      {isPending ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Object.keys(availableIntegrations).map((key) => (
             <Card key={key} className="p-6 animate-pulse">
@@ -127,15 +140,26 @@ export default function IntegrationsPage({ clinicId }: IntegrationsPageProps) {
                   </div>
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-4 flex gap-2">
                   {isActive ? (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      disabled
-                    >
-                      Connected
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        disabled
+                      >
+                        Connected
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={(e) => handleDeleteClick(integration.emrType, e)}
+                        disabled={deleteIntegrationMutation.isPending}
+                        title="Disconnect integration"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
                   ) : (
                     <Button
                       onClick={() => handleConnectClick(integration)}

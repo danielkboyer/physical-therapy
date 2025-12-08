@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input, Button, Avatar, AvatarFallback } from '@pt-app/shared-ui';
 import { Search, Menu } from 'lucide-react';
 import AppSidebar from './AppSidebar';
@@ -46,6 +46,15 @@ export default function Dashboard({ user, onProfileClick, sidebarOpen, setSideba
   );
   const [searchQuery, setSearchQuery] = useState(initialState?.searchQuery || '');
 
+  // Update state when initialState changes
+  useEffect(() => {
+    if (initialState) {
+      setCurrentView(initialState.currentView);
+      setCurrentTab(initialState.currentTab);
+      setSearchQuery(initialState.searchQuery);
+    }
+  }, [initialState]);
+
   const userInitials = user.name
     .split(' ')
     .map(n => n[0])
@@ -80,6 +89,11 @@ export default function Dashboard({ user, onProfileClick, sidebarOpen, setSideba
     setCurrentTab('visits');
   };
 
+  const handleNavigateToIntegrations = () => {
+    setCurrentView({ type: 'integrations' });
+    setCurrentTab('integrations');
+  };
+
   const renderContent = () => {
     switch (currentView.type) {
       case 'patients':
@@ -88,6 +102,7 @@ export default function Dashboard({ user, onProfileClick, sidebarOpen, setSideba
             searchQuery={searchQuery}
             clinicId={user.clinicId}
             onPatientClick={handlePatientClick}
+            onNavigateToIntegrations={handleNavigateToIntegrations}
           />
         );
       case 'visits':
@@ -96,6 +111,7 @@ export default function Dashboard({ user, onProfileClick, sidebarOpen, setSideba
             searchQuery={searchQuery}
             clinicId={user.clinicId}
             onVisitClick={handleVisitClick}
+            onNavigateToIntegrations={handleNavigateToIntegrations}
           />
         );
       case 'integrations':

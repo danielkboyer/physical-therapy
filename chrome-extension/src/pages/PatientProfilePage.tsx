@@ -22,11 +22,11 @@ export default function PatientProfilePage({
   const [nickName, setNickName] = useState('');
 
   // Use tRPC React Query hooks for automatic loading states and caching
-  const { data: patient, isLoading: patientLoading, refetch: refetchPatient } = trpc.patient.getById.useQuery({
+  const { data: patient, isPending: patientPending, refetch: refetchPatient } = trpc.patient.getById.useQuery({
     id: patientId,
   });
 
-  const { data: visits = [], isLoading: visitsLoading } = trpc.visit.getByPatient.useQuery({
+  const { data: visits = [], isPending: visitsPending } = trpc.visit.getByPatient.useQuery({
     patientId,
   });
 
@@ -53,7 +53,7 @@ export default function PatientProfilePage({
     });
   };
 
-  const loading = patientLoading || visitsLoading;
+  const loading = patientPending || visitsPending;
 
   if (loading) {
     return (

@@ -22,7 +22,7 @@ export default function RecordingScreen({
   const audioChunksRef = useRef<Blob[]>([]);
 
   // Load existing recording if recordingId is provided
-  const { data: existingRecording, isLoading } = trpc.recording.getById.useQuery(
+  const { data: existingRecording, isPending } = trpc.recording.getById.useQuery(
     { id: recordingId || '' },
     { enabled: !!recordingId }
   );
@@ -115,7 +115,7 @@ export default function RecordingScreen({
     console.log('Autofill Prompt clicked - to be implemented');
   };
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-muted-foreground">Loading recording...</p>

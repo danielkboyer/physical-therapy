@@ -6,10 +6,15 @@ interface PatientsPageProps {
   searchQuery: string;
   clinicId: string;
   onPatientClick: (patientId: string) => void;
+  onNavigateToIntegrations?: () => void;
 }
 
-export default function PatientsPage({ searchQuery, clinicId, onPatientClick }: PatientsPageProps) {
-  const { data: patients = [], isLoading } = trpc.patient.getByClinic.useQuery({
+export default function PatientsPage({ searchQuery, clinicId, onPatientClick, onNavigateToIntegrations }: PatientsPageProps) {
+  const { data: patients = [], isPending } = trpc.patient.getByClinic.useQuery({
+    clinicId,
+  });
+
+  const { data: integrations } = trpc.emrIntegration.getByClinic.useQuery({
     clinicId,
   });
 
@@ -25,7 +30,7 @@ export default function PatientsPage({ searchQuery, clinicId, onPatientClick }: 
     });
   }, [patients, searchQuery]);
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-muted-foreground">Loading patients...</p>
@@ -62,9 +67,28 @@ export default function PatientsPage({ searchQuery, clinicId, onPatientClick }: 
         </CardHeader>
         <CardContent>
           {filteredPatients.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {searchQuery ? 'No patients found matching your search.' : 'No patients yet.'}
-            </p>
+            <div className="text-sm text-muted-foreground">
+              {searchQuery ? (
+                <p>No patients found matching your search.</p>
+              ) : (
+                <>
+                  {!integrations?.some(int => int.isActive) ? (
+                    <p>
+                      No patients yet. To get started, go to{' '}
+                      <button
+                        onClick={onNavigateToIntegrations}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        integrations
+                      </button>{' '}
+                      and setup your EMR.
+                    </p>
+                  ) : (
+                    <p>No patients yet.</p>
+                  )}
+                </>
+              )}
+            </div>
           ) : (
             <div className="space-y-2">
               {filteredPatients.map((patient) => (

@@ -40,12 +40,19 @@ function App() {
 
   // Set default tab based on whether integrations exist
   useEffect(() => {
-    if (user && currentView === 'dashboard' && !savedDashboardState && integrations !== undefined) {
+    if (user && currentView === 'dashboard' && integrations !== undefined && !savedDashboardState) {
       const hasActiveIntegration = integrations.some(int => int.isActive);
       if (!hasActiveIntegration) {
         setSavedDashboardState({
           currentView: { type: 'integrations' },
           currentTab: 'integrations',
+          searchQuery: '',
+        });
+      } else {
+        // Set default to patients if integrations exist
+        setSavedDashboardState({
+          currentView: { type: 'patients' },
+          currentTab: 'patients',
           searchQuery: '',
         });
       }

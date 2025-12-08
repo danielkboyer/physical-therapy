@@ -14,20 +14,20 @@ export default function VisitScreen({
   onBack,
   onRecordingClick,
 }: VisitScreenProps) {
-  const { data: visit, isLoading: visitLoading } = trpc.visit.getById.useQuery({
+  const { data: visit, isPending: visitPending } = trpc.visit.getById.useQuery({
     id: visitId,
   });
 
-  const { data: patient, isLoading: patientLoading } = trpc.patient.getById.useQuery(
+  const { data: patient, isPending: patientPending } = trpc.patient.getById.useQuery(
     { id: visit?.patientId || '' },
     { enabled: !!visit?.patientId }
   );
 
-  const { data: recordings = [], isLoading: recordingsLoading } = trpc.recording.getByVisit.useQuery({
+  const { data: recordings = [], isPending: recordingsPending } = trpc.recording.getByVisit.useQuery({
     visitId,
   });
 
-  const loading = visitLoading || patientLoading || recordingsLoading;
+  const loading = visitPending || patientPending || recordingsPending;
 
   if (loading) {
     return (
