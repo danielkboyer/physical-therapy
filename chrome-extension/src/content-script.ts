@@ -3,8 +3,9 @@
  * Monitors URL changes and sends patient page info to extension
  */
 
-// Store the last processed patient ID to avoid duplicate processing
+// Store the last processed patient ID and visit ID to avoid duplicate processing
 let lastProcessedPatientId: string | null = null;
+let lastProcessedVisitId: string | null = null;
 
 /**
  * Extract patient ID from the current URL
@@ -16,6 +17,31 @@ function extractPatientIdFromUrl(): string | null {
   const patientId = match ? match[1] : null;
   console.log('[PT AI] Extracted patient ID:', patientId);
   return patientId;
+}
+
+/**
+ * Extract visit ID and patient ID from the current URL
+ * URL format: /onDeck?tab=upcoming&visitId=xxx&patientId=yyy
+ */
+function extractVisitInfoFromUrl(): { visitId: string; patientId: string } | null {
+  const url = window.location.href;
+  console.log('[PT AI] Checking URL for visit info:', url);
+
+  // Check if we're on the On Deck page with visitId parameter
+  if (!url.includes('/onDeck') || !url.includes('visitId=')) {
+    return null;
+  }
+
+  const urlObj = new URL(url);
+  const visitId = urlObj.searchParams.get('visitId');
+  const patientId = urlObj.searchParams.get('patientId');
+
+  if (visitId && patientId) {
+    console.log('[PT AI] Extracted visit info:', { visitId, patientId });
+    return { visitId, patientId };
+  }
+
+  return null;
 }
 
 /**
@@ -36,6 +62,29 @@ function notifyPatientPageDetected(patientId: string) {
     if (response?.success) {
       console.log('[PT AI] Patient page detected, extension notified');
       showNotification('Patient detected - Check PT AI extension');
+    }
+  });
+}
+
+/**
+ * Send message to extension when visit page is detected
+ */
+function notifyVisitPageDetected(visitId: string, patientId: string) {
+  // Send the current URL and let the extension handle scraping
+  chrome.runtime.sendMessage({
+    type: 'PROMPT_VISIT_PAGE_DETECTED',
+    visitId,
+    patientId,
+    url: window.location.href,
+  }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.error('[PT AI] Error sending message:', chrome.runtime.lastError);
+      return;
+    }
+
+    if (response?.success) {
+      console.log('[PT AI] Visit page detected, extension notified');
+      showNotification('Visit detected - Check PT AI extension');
     }
   });
 }
@@ -90,13 +139,34 @@ function showNotification(message: string) {
 }
 
 /**
- * Check if we're on a patient page and notify extension
+ * Check if we're on a patient page or visit page and notify extension
  */
-function checkAndProcessPatientPage() {
+function checkAndProcessPage() {
+  // First check if we're on a visit page (On Deck)
+  const visitInfo = extractVisitInfoFromUrl();
+  if (visitInfo) {
+    const { visitId, patientId } = visitInfo;
+
+    // Don't process the same visit multiple times
+    if (visitId === lastProcessedVisitId) {
+      return;
+    }
+
+    console.log('[PT AI] Detected visit page:', { visitId, patientId });
+    lastProcessedVisitId = visitId;
+    lastProcessedPatientId = null; // Clear patient tracking when on visit page
+
+    // Notify the extension
+    notifyVisitPageDetected(visitId, patientId);
+    return;
+  }
+
+  // If not on visit page, check for patient page
   const patientId = extractPatientIdFromUrl();
 
   if (!patientId) {
     lastProcessedPatientId = null;
+    lastProcessedVisitId = null;
     return;
   }
 
@@ -107,6 +177,7 @@ function checkAndProcessPatientPage() {
 
   console.log('[PT AI] Detected patient page:', patientId);
   lastProcessedPatientId = patientId;
+  lastProcessedVisitId = null; // Clear visit tracking when on patient page
 
   // Notify the extension
   notifyPatientPageDetected(patientId);
@@ -124,7 +195,7 @@ function monitorUrlChanges() {
     if (currentUrl !== lastUrl) {
       lastUrl = currentUrl;
       console.log('[PT AI] URL changed:', currentUrl);
-      checkAndProcessPatientPage();
+      checkAndProcessPage();
     }
   });
 
@@ -133,7 +204,7 @@ function monitorUrlChanges() {
   // Also listen for popstate events (back/forward navigation)
   window.addEventListener('popstate', () => {
     console.log('[PT AI] Popstate event');
-    checkAndProcessPatientPage();
+    checkAndProcessPage();
   });
 
   // Listen for pushState/replaceState
@@ -143,13 +214,13 @@ function monitorUrlChanges() {
   history.pushState = function(...args) {
     originalPushState.apply(this, args);
     console.log('[PT AI] PushState event');
-    checkAndProcessPatientPage();
+    checkAndProcessPage();
   };
 
   history.replaceState = function(...args) {
     originalReplaceState.apply(this, args);
     console.log('[PT AI] ReplaceState event');
-    checkAndProcessPatientPage();
+    checkAndProcessPage();
   };
 }
 
@@ -160,10 +231,10 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     console.log('[PT AI] Content script initialized (DOMContentLoaded)');
     monitorUrlChanges();
-    checkAndProcessPatientPage();
+    checkAndProcessPage();
   });
 } else {
   console.log('[PT AI] Content script initialized (already loaded)');
   monitorUrlChanges();
-  checkAndProcessPatientPage();
+  checkAndProcessPage();
 }

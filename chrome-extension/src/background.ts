@@ -20,6 +20,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep message channel open for async response
   }
 
+  // Handle Prompt EMR visit page detection
+  if (message.type === 'PROMPT_VISIT_PAGE_DETECTED') {
+    handlePromptVisitDetection(message, sender)
+      .then(result => sendResponse(result))
+      .catch(error => {
+        console.error('Error handling visit detection:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+    return true; // Keep message channel open for async response
+  }
+
   // Default response for other messages
   sendResponse({ success: true });
   return true;
@@ -55,6 +66,42 @@ async function handlePromptPatientDetection(message: any, sender: chrome.runtime
   // Send a message to the side panel to fetch and add the patient
   chrome.runtime.sendMessage({
     type: 'PATIENT_DETECTED_FROM_EMR',
+    patientId,
+    url,
+    tabId: sender.tab.id,
+  });
+
+  return { success: true };
+}
+
+/**
+ * Handle detection of a Prompt EMR visit page
+ */
+async function handlePromptVisitDetection(message: any, sender: chrome.runtime.MessageSender) {
+  const { visitId, patientId, url } = message;
+
+  console.log('[PT AI Background] Visit detected:', { visitId, patientId, url });
+
+  // Get the tab where the message came from
+  if (!sender.tab?.id) {
+    throw new Error('No tab ID in sender');
+  }
+
+  // Store the visit info and notify the side panel
+  await chrome.storage.local.set({
+    lastDetectedVisit: {
+      visitId,
+      patientId,
+      url,
+      timestamp: Date.now(),
+      tabId: sender.tab.id,
+    }
+  });
+
+  // Send a message to the side panel to fetch and add the visit
+  chrome.runtime.sendMessage({
+    type: 'VISIT_DETECTED_FROM_EMR',
+    visitId,
     patientId,
     url,
     tabId: sender.tab.id,

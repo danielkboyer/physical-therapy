@@ -29,17 +29,37 @@ export default function VisitsPage({ searchQuery, clinicId, onVisitClick, onNavi
     return new Map(patients.map((p) => [p.id, p]));
   }, [patients]);
 
-  // Combine visit data with patient names and filter by search
+  // Combine visit data with patient names and sort from future to past
   const visitsWithPatients = useMemo(() => {
-    return visits.map((visit) => {
-      const patient = patientMap.get(visit.patientId);
-      return {
-        ...visit,
-        patientName: patient
-          ? `${patient.firstName} ${patient.lastName}`
-          : 'Unknown Patient',
-      };
-    });
+    const now = new Date();
+
+    return visits
+      .map((visit) => {
+        const patient = patientMap.get(visit.patientId);
+        const visitDate = new Date(visit.visitDate);
+        const isFuture = visitDate >= now;
+
+        return {
+          ...visit,
+          patientName: patient
+            ? `${patient.firstName} ${patient.lastName}`
+            : 'Unknown Patient',
+          visitDateObj: visitDate,
+          isFuture,
+        };
+      })
+      .sort((a, b) => {
+        // Future visits: sort ascending (soonest first)
+        // Past visits: sort descending (most recent first)
+        if (a.isFuture && b.isFuture) {
+          return a.visitDateObj.getTime() - b.visitDateObj.getTime();
+        } else if (!a.isFuture && !b.isFuture) {
+          return b.visitDateObj.getTime() - a.visitDateObj.getTime();
+        } else {
+          // Future visits come before past visits
+          return a.isFuture ? -1 : 1;
+        }
+      });
   }, [visits, patientMap]);
 
   // Filter visits based on search query
@@ -120,7 +140,7 @@ export default function VisitsPage({ searchQuery, clinicId, onVisitClick, onNavi
                   key={visit.id}
                   variant="outline"
                   className="w-full justify-start"
-                  onClick={() => onVisitClick(visit.id)}
+                  onClick={() => onVisitClick(visit.patientId)}
                 >
                   <div className="text-left flex-1">
                     <div className="font-medium">{visit.patientName}</div>

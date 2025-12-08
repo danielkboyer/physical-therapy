@@ -5,6 +5,7 @@ import AppSidebar from './AppSidebar';
 import PatientsPage from '../pages/PatientsPage';
 import VisitsPage from '../pages/VisitsPage';
 import PatientProfilePage from '../pages/PatientProfilePage';
+import PatientVisitsPage from '../pages/PatientVisitsPage';
 import VisitScreen from '../pages/VisitScreen';
 import RecordingScreen from '../pages/RecordingScreen';
 import IntegrationsPage from '../pages/IntegrationsPage';
@@ -14,8 +15,9 @@ export type DashboardView =
   | { type: 'visits' }
   | { type: 'integrations' }
   | { type: 'patient-profile'; patientId: string }
-  | { type: 'visit'; visitId: string }
-  | { type: 'recording'; visitId: string; recordingId?: string };
+  | { type: 'patient-visits'; patientId: string } // List of visits for a specific patient
+  | { type: 'visit'; visitId: string; patientId: string } // Specific visit detail
+  | { type: 'recording'; visitId: string; patientId: string; recordingId?: string };
 
 export interface DashboardState {
   currentView: DashboardView;
@@ -71,12 +73,16 @@ export default function Dashboard({ user, onProfileClick, sidebarOpen, setSideba
     setCurrentView({ type: 'patient-profile', patientId });
   };
 
-  const handleVisitClick = (visitId: string) => {
-    setCurrentView({ type: 'visit', visitId });
+  const handlePatientVisitsClick = (patientId: string) => {
+    setCurrentView({ type: 'patient-visits', patientId });
   };
 
-  const handleRecordingClick = (recordingId: string, visitId: string) => {
-    setCurrentView({ type: 'recording', visitId, recordingId });
+  const handleVisitClick = (visitId: string, patientId: string) => {
+    setCurrentView({ type: 'visit', visitId, patientId });
+  };
+
+  const handleRecordingClick = (recordingId: string, visitId: string, patientId: string) => {
+    setCurrentView({ type: 'recording', visitId, patientId, recordingId });
   };
 
   const handleBackToPatients = () => {
@@ -87,6 +93,10 @@ export default function Dashboard({ user, onProfileClick, sidebarOpen, setSideba
   const handleBackToVisits = () => {
     setCurrentView({ type: 'visits' });
     setCurrentTab('visits');
+  };
+
+  const handleBackToPatientVisits = (patientId: string) => {
+    setCurrentView({ type: 'patient-visits', patientId });
   };
 
   const handleNavigateToIntegrations = () => {
@@ -110,7 +120,7 @@ export default function Dashboard({ user, onProfileClick, sidebarOpen, setSideba
           <VisitsPage
             searchQuery={searchQuery}
             clinicId={user.clinicId}
-            onVisitClick={handleVisitClick}
+            onVisitClick={handlePatientVisitsClick}
             onNavigateToIntegrations={handleNavigateToIntegrations}
           />
         );
@@ -122,6 +132,15 @@ export default function Dashboard({ user, onProfileClick, sidebarOpen, setSideba
             patientId={currentView.patientId}
             clinicId={user.clinicId}
             onBack={handleBackToPatients}
+            onVisitClick={(visitId) => handleVisitClick(visitId, currentView.patientId)}
+          />
+        );
+      case 'patient-visits':
+        return (
+          <PatientVisitsPage
+            patientId={currentView.patientId}
+            clinicId={user.clinicId}
+            onBack={handleBackToVisits}
             onVisitClick={handleVisitClick}
           />
         );
@@ -129,8 +148,8 @@ export default function Dashboard({ user, onProfileClick, sidebarOpen, setSideba
         return (
           <VisitScreen
             visitId={currentView.visitId}
-            onBack={handleBackToVisits}
-            onRecordingClick={(recordingId) => handleRecordingClick(recordingId, currentView.visitId)}
+            onBack={() => handleBackToPatientVisits(currentView.patientId)}
+            onRecordingClick={(recordingId) => handleRecordingClick(recordingId, currentView.visitId, currentView.patientId)}
           />
         );
       case 'recording':
@@ -138,13 +157,18 @@ export default function Dashboard({ user, onProfileClick, sidebarOpen, setSideba
           <RecordingScreen
             visitId={currentView.visitId}
             recordingId={currentView.recordingId}
-            onBack={() => handleVisitClick(currentView.visitId)}
+            onBack={() => handleVisitClick(currentView.visitId, currentView.patientId)}
           />
         );
     }
   };
 
-  const showHeaderAndSidebar = currentView.type === 'patients' || currentView.type === 'visits' || currentView.type === 'integrations';
+  const showHeaderAndSidebar =
+    currentView.type === 'patients' ||
+    currentView.type === 'visits' ||
+    currentView.type === 'integrations' ||
+    currentView.type === 'patient-visits' ||
+    currentView.type === 'visit';
 
   return (
     <div className="flex h-screen w-full overflow-hidden">

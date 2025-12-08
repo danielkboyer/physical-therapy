@@ -164,6 +164,220 @@ async function scrapePromptPatientData(patientId: string) {
   };
 }
 
+/**
+ * Function to be injected into Prompt EMR visit page to scrape visit data
+ * This function will be executed in the context of the Prompt EMR page
+ *
+ * NOTE: This function cannot import from other files because it's serialized and injected.
+ * All helper functions must be defined inline.
+ */
+async function scrapePromptVisitData(visitId: string, patientId: string) {
+  console.log('[PT AI Scraper] Starting to scrape visit data for:', { visitId, patientId });
+
+  // Helper: Wait for element to appear
+  const waitForElement = (selector: string, timeout = 5000): Promise<Element | null> => {
+    return new Promise((resolve) => {
+      const element = document.querySelector(selector);
+      if (element) {
+        resolve(element);
+        return;
+      }
+
+      const observer = new MutationObserver(() => {
+        const element = document.querySelector(selector);
+        if (element) {
+          observer.disconnect();
+          resolve(element);
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+
+      setTimeout(() => {
+        observer.disconnect();
+        resolve(null);
+      }, timeout);
+    });
+  };
+
+  // Helper: Parse name with nickname (same as patient scraper)
+  const parseNameWithNickname = (fullNameText: string) => {
+    let firstName = '';
+    let lastName = '';
+    let nickName: string | undefined;
+
+    const nicknameMatch = fullNameText.match(/"([^"]+)"/);
+    if (nicknameMatch) {
+      nickName = nicknameMatch[1];
+    }
+
+    const nameWithoutNickname = fullNameText.replace(/"[^"]+"/, '').trim();
+    const nameParts = nameWithoutNickname.split(' ').filter(part => part.length > 0);
+
+    if (nameParts.length >= 2) {
+      firstName = nameParts[0];
+      lastName = nameParts.slice(1).join(' ');
+    } else if (nameParts.length === 1) {
+      firstName = nameParts[0];
+    }
+
+    return { firstName, lastName, nickName };
+  };
+
+  // Extract patient name from the page
+  const patientNameElement = await waitForElement('.text-h4.text-p-gray600');
+  let patientFirstName = '';
+  let patientLastName = '';
+  let patientNickName: string | undefined;
+
+  if (patientNameElement) {
+    const fullNameText = patientNameElement.textContent?.trim() || '';
+    const parsedName = parseNameWithNickname(fullNameText);
+    patientFirstName = parsedName.firstName;
+    patientLastName = parsedName.lastName;
+    patientNickName = parsedName.nickName;
+    console.log('[PT AI Scraper] Extracted patient name:', { patientFirstName, patientLastName, patientNickName });
+  }
+
+  // Extract visit date and time from the page
+  let visitDateStr = '';
+  let visitTimeStr = '';
+
+  // Try to get date from the header at the top of the page
+  // Look for the visit header that shows date info (e.g., "Tomorrow - Visit 1 - Initial Evaluation")
+  const visitHeaderSelectors = [
+    '.text-subtitle2',
+    '[class*="text-subtitle"]',
+    '.text-h6',
+    '.text-subtitle1',
+  ];
+
+  for (const selector of visitHeaderSelectors) {
+    const headerElement = document.querySelector(selector);
+    if (headerElement) {
+      const headerText = headerElement.textContent?.trim() || '';
+      console.log('[PT AI Scraper] Found header:', headerText, 'with selector:', selector);
+
+      // Check if this header contains date info
+      if (headerText.toLowerCase().includes('tomorrow') ||
+          headerText.toLowerCase().includes('today') ||
+          headerText.toLowerCase().includes('visit')) {
+
+        if (headerText.toLowerCase().includes('tomorrow')) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          visitDateStr = tomorrow.toISOString().split('T')[0];
+          console.log('[PT AI Scraper] Using tomorrow as date:', visitDateStr);
+          break;
+        } else if (headerText.toLowerCase().includes('today')) {
+          visitDateStr = new Date().toISOString().split('T')[0];
+          console.log('[PT AI Scraper] Using today as date:', visitDateStr);
+          break;
+        }
+      }
+    }
+  }
+
+  // If no date found from header, try the sidebar date headers
+  if (!visitDateStr) {
+    const sidebarDateHeaders = document.querySelectorAll('.text-subtitle1, .text-h6');
+    for (const dateHeader of Array.from(sidebarDateHeaders)) {
+      const headerText = dateHeader.textContent?.trim() || '';
+      console.log('[PT AI Scraper] Checking sidebar header:', headerText);
+
+      if (headerText.toLowerCase().includes('tomorrow')) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        visitDateStr = tomorrow.toISOString().split('T')[0];
+        break;
+      } else if (headerText.toLowerCase().includes('today')) {
+        visitDateStr = new Date().toISOString().split('T')[0];
+        break;
+      } else if (headerText.match(/\d+\s+visits?/i)) {
+        // This is the "16 visits" header, skip it
+        continue;
+      }
+    }
+  }
+
+  // Extract time from the schedule list items
+  // Look for all time elements in the left sidebar
+  const timeElements = document.querySelectorAll('.text-left');
+  console.log('[PT AI Scraper] Found time elements:', timeElements.length);
+
+  // Try to find the highlighted/selected visit
+  const visitElements = document.querySelectorAll('.q-item');
+  for (const visitElement of Array.from(visitElements)) {
+    // Check various ways a visit could be selected
+    const computedStyle = window.getComputedStyle(visitElement);
+    const bgColor = computedStyle.backgroundColor;
+    const isHighlighted =
+      visitElement.classList.contains('bg-blue-100') ||
+      visitElement.classList.contains('q-router-link--active') ||
+      visitElement.classList.contains('bg-blue') ||
+      bgColor.includes('rgb') && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'rgb(255, 255, 255)';
+
+    if (isHighlighted) {
+      console.log('[PT AI Scraper] Found highlighted visit element');
+
+      // Look for time within this element
+      const timeElement = visitElement.querySelector('.text-left');
+      if (timeElement) {
+        visitTimeStr = timeElement.textContent?.trim() || '';
+        console.log('[PT AI Scraper] Extracted time from highlighted element:', visitTimeStr);
+        break;
+      }
+    }
+  }
+
+  // If still no time found, try to extract from the first time element (fallback)
+  if (!visitTimeStr && timeElements.length > 0) {
+    visitTimeStr = timeElements[0].textContent?.trim() || '';
+    console.log('[PT AI Scraper] Using first time element as fallback:', visitTimeStr);
+  }
+
+  // If we found time, combine it with the date
+  let visitDateTime: string | null = null;
+  if (visitDateStr && visitTimeStr) {
+    // Parse time (e.g., "7:00am" to 24-hour format)
+    const timeParts = visitTimeStr.match(/(\d+):(\d+)(am|pm)/i);
+    if (timeParts) {
+      let hours = parseInt(timeParts[1]);
+      const minutes = parseInt(timeParts[2]);
+      const meridiem = timeParts[3].toLowerCase();
+
+      if (meridiem === 'pm' && hours !== 12) {
+        hours += 12;
+      } else if (meridiem === 'am' && hours === 12) {
+        hours = 0;
+      }
+
+      // Construct ISO datetime string
+      visitDateTime = `${visitDateStr}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+      console.log('[PT AI Scraper] Constructed visit date/time:', visitDateTime);
+    }
+  }
+
+  console.log('[PT AI Scraper] Final result:', {
+    patientFirstName,
+    patientLastName,
+    patientNickName,
+    visitDateTime
+  });
+
+  return {
+    patient: {
+      firstName: patientFirstName,
+      lastName: patientLastName,
+      nickName: patientNickName,
+    },
+    visitDateTime,
+  };
+}
+
 function App() {
   const [currentView, setCurrentView] = useState<View>('signup');
   const [user, setUser] = useState<StoredUser | null>(null);
@@ -189,6 +403,23 @@ function App() {
       setSavedDashboardState({
         currentView: { type: 'patient-profile', patientId: createdPatient.id },
         currentTab: 'patients',
+        searchQuery: '',
+      });
+      setCurrentView('dashboard');
+    },
+  });
+
+  // Create visit mutation with automatic query invalidation
+  const createVisitMutation = trpc.visit.create.useMutation({
+    onSuccess: (createdVisit) => {
+      // Invalidate the visits queries to refresh the lists
+      utils.visit.getByClinic.invalidate({ clinicId: createdVisit.clinicId });
+      utils.visit.getByPatient.invalidate({ patientId: createdVisit.patientId });
+
+      // Navigate to the specific visit with patientId for proper breadcrumb navigation
+      setSavedDashboardState({
+        currentView: { type: 'visit', visitId: createdVisit.id, patientId: createdVisit.patientId },
+        currentTab: 'visits',
         searchQuery: '',
       });
       setCurrentView('dashboard');
@@ -273,6 +504,87 @@ function App() {
 
         return true;
       }
+
+      if (message.type === 'VISIT_DETECTED_FROM_EMR') {
+        console.log('[PT AI App] Processing visit detection');
+
+        const { visitId, patientId, tabId } = message;
+
+        if (!user?.clinicId) {
+          console.error('[PT AI] No clinic ID, cannot add visit');
+          sendResponse({ success: false, error: 'No clinic ID' });
+          return;
+        }
+
+        try {
+          console.log('[PT AI] Scraping visit data from tab:', tabId);
+
+          // Execute a script in the Prompt EMR tab to scrape visit data
+          const results = await chrome.scripting.executeScript({
+            target: { tabId },
+            func: scrapePromptVisitData,
+            args: [visitId, patientId],
+          });
+
+          if (!results || results.length === 0 || !results[0].result) {
+            console.error('[PT AI] Failed to scrape visit data');
+            sendResponse({ success: false, error: 'Failed to scrape visit data' });
+            return;
+          }
+
+          const visitData = results[0].result;
+          console.log('[PT AI] Scraped visit data:', visitData);
+
+          // First, ensure the patient exists (merge patient data)
+          console.log('[PT AI] Creating/updating patient with data:', {
+            firstName: visitData.patient.firstName,
+            lastName: visitData.patient.lastName,
+            nickName: visitData.patient.nickName,
+            clinicId: user.clinicId,
+            externalId: patientId,
+          });
+
+          const createdPatient = await createPatientMutation.mutateAsync({
+            firstName: visitData.patient.firstName,
+            lastName: visitData.patient.lastName,
+            nickName: visitData.patient.nickName || null,
+            clinicId: user.clinicId,
+            externalId: patientId,
+          });
+
+          console.log('[PT AI] Patient created/updated:', createdPatient);
+
+          // Now create/update the visit
+          // Use current date/time as fallback if visit date/time not found
+          const visitDate = visitData.visitDateTime || new Date().toISOString();
+
+          if (!visitData.visitDateTime) {
+            console.warn('[PT AI] No visit date/time found, using current date/time as fallback');
+          }
+
+          console.log('[PT AI] Creating visit with data:', {
+            patientId: createdPatient.id,
+            clinicId: user.clinicId,
+            visitDate: visitDate,
+            externalId: visitId,
+          });
+
+          await createVisitMutation.mutateAsync({
+            patientId: createdPatient.id,
+            clinicId: user.clinicId,
+            visitDate: visitDate,
+            externalId: visitId,
+          });
+
+          console.log('[PT AI] Visit added successfully');
+          sendResponse({ success: true });
+        } catch (error) {
+          console.error('[PT AI] Error adding visit from EMR:', error);
+          sendResponse({ success: false, error: String(error) });
+        }
+
+        return true;
+      }
     };
 
     chrome.runtime.onMessage.addListener(messageListener);
@@ -280,7 +592,7 @@ function App() {
     return () => {
       chrome.runtime.onMessage.removeListener(messageListener);
     };
-  }, [user, createPatientMutation]);
+  }, [user, createPatientMutation, createVisitMutation]);
 
   // Set default tab based on whether integrations exist
   useEffect(() => {

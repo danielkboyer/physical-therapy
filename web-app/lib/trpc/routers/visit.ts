@@ -20,6 +20,7 @@ export const createVisitSchema = z.object({
   patientId: z.string(),
   clinicId: z.string(),
   visitDate: z.string().transform((str) => new Date(str)),
+  externalId: z.string().optional(),
 });
 
 export const visitRouter = router({
@@ -30,7 +31,8 @@ export const visitRouter = router({
       return await createVisit(
         input.patientId,
         input.clinicId,
-        input.visitDate
+        input.visitDate,
+        input.externalId
       );
     }),
 

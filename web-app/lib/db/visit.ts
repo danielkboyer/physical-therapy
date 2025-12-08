@@ -19,17 +19,21 @@ export async function createVisit(
   const session = getSession();
 
   try {
+    // Use MERGE to upsert based on clinicId and externalId
+    // If visit exists, update visitDate and patientId; if not, create new
     const result = await session.run(
       `
-      CREATE (v:Visit {
-        id: randomUUID(),
-        patientId: $patientId,
-        clinicId: $clinicId,
-        visitDate: datetime($visitDate),
-        externalId: $externalId,
-        createdAt: datetime(),
-        updatedAt: datetime()
-      })
+      MERGE (v:Visit {clinicId: $clinicId, externalId: $externalId})
+      ON CREATE SET
+        v.id = randomUUID(),
+        v.patientId = $patientId,
+        v.visitDate = datetime($visitDate),
+        v.createdAt = datetime(),
+        v.updatedAt = datetime()
+      ON MATCH SET
+        v.patientId = $patientId,
+        v.visitDate = datetime($visitDate),
+        v.updatedAt = datetime()
       RETURN v
       `,
       { patientId, clinicId, visitDate: visitDate.toISOString(), externalId }
