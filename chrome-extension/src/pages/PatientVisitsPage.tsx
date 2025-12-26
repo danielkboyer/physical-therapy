@@ -1,7 +1,8 @@
-import { Card, CardHeader, CardTitle, CardContent, Button } from '@pt-app/shared-ui';
-import { ArrowLeft, Calendar } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@pt-app/shared-ui';
+import { Calendar } from 'lucide-react';
 import { trpc } from '../trpc-client';
 import { formatDateTime } from '../utils/date';
+import PageHeader from '../components/PageHeader';
 
 interface PatientVisitsPageProps {
   patientId: string;
@@ -37,35 +38,18 @@ export default function PatientVisitsPage({
 
   if (!patient) {
     return (
-      <div className="flex flex-1 flex-col gap-4">
-        <Button variant="ghost" onClick={onBack} className="w-fit">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Visits
-        </Button>
+      <div className="flex flex-1 flex-col">
+        <PageHeader title="Patient not found" onBack={onBack} />
         <p className="text-muted-foreground">Patient not found</p>
       </div>
     );
   }
 
-  const displayName = patient.nickName || patient.firstName;
+  const patientName = `${patient.firstName} ${patient.lastName}${patient.nickName ? ` (${patient.nickName})` : ''}`;
 
   return (
-    <div className="flex flex-1 flex-col gap-6">
-      {/* Header with back button */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={onBack} className="w-fit">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Visits
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">
-            {displayName} {patient.lastName}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {visits.length} {visits.length === 1 ? 'visit' : 'visits'}
-          </p>
-        </div>
-      </div>
+    <div className="flex flex-1 flex-col">
+      <PageHeader title={patientName} onBack={onBack} />
 
       {/* Visits list */}
       {visits.length === 0 ? (

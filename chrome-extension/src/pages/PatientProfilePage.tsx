@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, Input, Button, Label } from '@pt-app/shared-ui';
-import { ArrowLeft, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { trpc } from '../trpc-client';
 import { formatDateTime } from '../utils/date';
+import PageHeader from '../components/PageHeader';
 
 interface PatientProfilePageProps {
   patientId: string;
@@ -68,22 +69,20 @@ export default function PatientProfilePage({
 
   if (!patient) {
     return (
-      <div className="flex flex-1 flex-col gap-4">
-        <Button variant="ghost" onClick={onBack} className="w-fit">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Patients
-        </Button>
+      <div className="flex flex-1 flex-col">
+        <PageHeader title="Patient not found" onBack={onBack} />
         <p className="text-muted-foreground">Patient not found</p>
       </div>
     );
   }
 
+  const patientName = `${patient.firstName} ${patient.lastName}${patient.nickName ? ` (${patient.nickName})` : ''}`;
+
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <Button variant="ghost" onClick={onBack} className="w-fit">
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Patients
-      </Button>
+    <div className="flex flex-1 flex-col">
+      <PageHeader title={patientName} onBack={onBack} />
+
+      <div className="flex flex-col gap-4">
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -177,6 +176,7 @@ export default function PatientProfilePage({
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

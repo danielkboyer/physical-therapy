@@ -167,8 +167,10 @@ export default function Dashboard({ user, onProfileClick, sidebarOpen, setSideba
     currentView.type === 'patients' ||
     currentView.type === 'visits' ||
     currentView.type === 'integrations' ||
+    currentView.type === 'patient-profile' ||
     currentView.type === 'patient-visits' ||
-    currentView.type === 'visit';
+    currentView.type === 'visit' ||
+    currentView.type === 'recording';
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
@@ -203,6 +205,7 @@ export default function Dashboard({ user, onProfileClick, sidebarOpen, setSideba
                 type="search"
                 placeholder="Search patients or visits..."
                 className="pl-8 w-full"
+                value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, Button, Textarea } from '@pt-app/shared-ui';
-import { ArrowLeft, Mic, Square } from 'lucide-react';
+import { Mic, Square } from 'lucide-react';
 import { trpc } from '../trpc-client';
+import PageHeader from '../components/PageHeader';
 
 interface RecordingScreenProps {
   recordingId?: string;
@@ -124,17 +125,11 @@ export default function RecordingScreen({
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <Button variant="ghost" onClick={onBack} className="w-fit">
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Visit
-      </Button>
+    <div className="flex flex-1 flex-col">
+      <PageHeader title="Recording" onBack={onBack} />
 
       <Card>
-        <CardHeader>
-          <CardTitle>Recording</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-6">
           <div className="flex gap-2">
             {!isRecording ? (
               <Button onClick={startRecording}>
